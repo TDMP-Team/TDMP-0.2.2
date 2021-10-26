@@ -1,6 +1,6 @@
 #pragma once
 #include "steam/headers/steam_api.h"
-#include <Windows.h>
+#include <windows.h>
 #include <vector>
 #include <string>
 #include "Messages.h"

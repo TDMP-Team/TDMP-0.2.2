@@ -8,7 +8,7 @@
 #include <boost/iostreams/filter/zlib.hpp>
 #include <cpp-base64/base64.h>
 
-std::string string_compress_encode(const std::string& data)
+static inline std::string string_compress_encode(const std::string& data)
 {
     std::stringstream compressed;
     std::stringstream original;
@@ -24,7 +24,7 @@ std::string string_compress_encode(const std::string& data)
     return compressed_encoded;
 }
 
-std::string string_decompress_decode(const std::string& data)
+static inline std::string string_decompress_decode(const std::string& data)
 {
     std::stringstream compressed_encoded;
     std::stringstream decompressed;
