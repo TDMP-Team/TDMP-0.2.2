@@ -49,14 +49,13 @@ void TDMP::Player::CreateBodyIfNotExists()
 	Debug::print("Creating player's body", Env::Client);
 
 	spawner::freeObjectSpawnParams params = {};
-
 	params.attributes.push_back({ td::small_string("unbreakable"),td::small_string("") });
-
 	params.useUserRotation = false;
-	//params.nocull = true;
+	//params.nocull = true; // Nocull would make it so we can see players at any distance, but it also breaks rendering, so let's comment it out for now.
+
+	// TODO: Make player's body not collidable
+
 	body = spawner::placeFreeObject("KM_Vox\\Default\\ptest\\object.vox", params);
-	//glb::setObjectAttribute(body.shapes[0], "nocull", "");
-	//glb::setObjectAttribute(body.shapes[0], "unbreakable", "");
 }
 
 bool TDMP::Player::IsMe()

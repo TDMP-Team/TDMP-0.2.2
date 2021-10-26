@@ -208,7 +208,7 @@ void TDMP::Client::HandleData(EMessage eMsg, SteamNetworkingMessage_t* message)
 
 		break;
 	}
-	case k_EMsgServerUpdateWorld:
+	case k_EMsgServerUpdateWorld: // This is made for sending more than one body in one packet. Isn't finished yet
 	{
 		/*MsgUpdateBodies* pMsg = (MsgUpdateBodies*)message->GetData();
 		if (pMsg == nullptr)

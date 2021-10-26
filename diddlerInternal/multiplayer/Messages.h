@@ -1,3 +1,5 @@
+// This file is exact the same as Messages.h of SpaceWar
+
 #ifndef MESSAGES_H
 #define MESSAGES_H
 
@@ -123,6 +125,8 @@ private:
 
 	MsgBody bodyData;
 };
+
+// My attempts to send vector with bodies
 
 /*struct MsgUpdateBodies
 {

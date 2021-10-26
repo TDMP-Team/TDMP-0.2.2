@@ -28,6 +28,7 @@ TDMP::Server* TDMP::server;
 
 // Thanks to Valve for making source code of Spacewar public
 
+// DebugOutput for debugging steam's servers stuff
 /*static void DebugOutput(ESteamNetworkingSocketsDebugOutputType eType, const char* pszMsg)
 {
 	if (eType == k_ESteamNetworkingSocketsDebugOutputType_Bug)
@@ -54,7 +55,7 @@ TDMP::Server::Server()
 
 		SteamGameServer()->SetModDir("Teardown");
 		SteamGameServer()->SetProduct("Teardown");
-		SteamGameServer()->SetGameDescription("A Teardown server"); // damn a lot things to fill
+		SteamGameServer()->SetGameDescription("A Teardown server");
 
 		SteamGameServer()->LogOnAnonymous();
 		//SteamNetworkingUtils()->InitRelayNetworkAccess();
@@ -63,6 +64,7 @@ TDMP::Server::Server()
 	}
 	//SteamNetworkingUtils()->SetDebugOutputFunction(k_ESteamNetworkingSocketsDebugOutputType_Msg, DebugOutput);
 
+	// Hosting server via IP (So, not P2P)
 	/*SteamNetworkingIPAddr address;
 	address.Clear();
 	address.m_port = port;*/
@@ -98,8 +100,6 @@ void TDMP::Server::OnSteamServersConnected(SteamServersConnected_t* pCallback)
 	TDMP::Debug::print("Server connected to Steam servers!", Env::Server);
 
 	uint64 serverId = SteamGameServer()->GetSteamID().ConvertToUint64();
-	//Debug::print(serverId);
-
 	//SteamIPAddress_t ip = SteamGameServer()->GetPublicIP();
 
 	SteamMatchmaking()->SetLobbyGameServer(TDMP::lobby->id, 0, 0, serverId);//ip.m_unIPv4, port, serverId);
@@ -121,20 +121,13 @@ void TDMP::Server::Tick()
 		return;
 
 	//std::vector<MsgUpdateBodies> msgs;
-	//for (size_t i = 0; i < glb::game->m_Scene->m_Bodies->size(); i++)
-
 	//std::vector<MsgBody> bodies;
 	for (size_t i = 0; i < TDMP::levelBodies.size(); i++)
 	{
 		TDBody* body = TDMP::levelBodies[i];
-		//TDBody* body = glb::game->m_Scene->m_Bodies->data()[i];
 
 		if (body == 0)
 			continue;
-
-		//drawCube(body->Position, 0.3f, td::redColor);
-
-		//drawCube(body->Position, 0.2f, td::blueColor);
 
 		float len = pow(body->Velocity.x, 2) + pow(body->Velocity.y, 2) + pow(body->Velocity.z, 2);
 		
@@ -162,7 +155,6 @@ void TDMP::Server::Tick()
 		MsgUpdateBody msg;
 		msg.SetBody(body);
 		server->BroadcastData(&msg, sizeof(msg), k_nSteamNetworkingSend_Unreliable);
-		//drawCube(body->Position, 0.1f, td::greenColor);
 		
 		/*if (bodies.size() >= 100)
 		{
@@ -178,9 +170,9 @@ void TDMP::Server::Tick()
 		bodies.push_back(MsgBody{ body->Position, body->Rotation, body->Velocity, body->RotationVelocity, body->Id });*/
 	}
 
-	/*Debug::print(std::string("Bodies vector: ") + std::to_string(bodies.size()));
-	Debug::print(std::string("Packets vector: ") + std::to_string(msgs.size()));
-
+	/*
+	// if bodies vector isn't empty (so it wasn't pushed to the packets to be sent), then we need to push it here
+	// TODO: Make it so if we need to send only one body at all, then send k_EMsgServerUpdateBody instead. Shall be faster
 	if (bodies.size() > 0)
 	{
 		MsgUpdateBodies msg;
@@ -196,8 +188,6 @@ void TDMP::Server::Tick()
 		{
 			server->BroadcastData(&msgs[i], sizeof(msgs[i]), k_nSteamNetworkingSend_Unreliable);
 		}
-
-		Debug::print(std::string("Sending ") + std::to_string(msgs.size()) + " packet(s)");
 	}*/
 }
 

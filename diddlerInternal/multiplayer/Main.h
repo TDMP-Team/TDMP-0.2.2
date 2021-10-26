@@ -23,7 +23,15 @@ namespace TDMP
     /// </summary>
     extern std::string Version;
 
+    /// <summary>
+    /// Whether or not game level (menu including) is loaded
+    /// </summary>
     extern bool LevelLoaded;
+
+    /// <summary>
+    /// Vector of cached bodies since level load.
+    /// This is made for sending (and applying) bodies to the clients. On level load, all bodies have same IDs, so they're not mixed
+    /// </summary>
     extern std::vector<TDBody*> levelBodies;
 
     /// <summary>
