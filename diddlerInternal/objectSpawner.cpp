@@ -81,7 +81,7 @@ float deg2rad(float deg) {
 namespace spawner {
 
     float voxScale = 1.f;
-    std::vector<spawner::spawnerCatagory> spawnerObjectsDatabase;
+    std::vector<spawner::spawnerCategory> spawnerObjectsDatabase;
 
     //std::vector<toolgun::fadeShapeOutline> spawnedObjects = {};
     std::vector<KMSpawnedObject> spawnList = {};
@@ -408,7 +408,7 @@ namespace spawner {
     }
 
   
-    KMSpawnedObject spawnObjectProxy(std::string path, objectSpawnerParams params) {
+    KMSpawnedObject spawnObjectProxy(const std::string& path, objectSpawnerParams params) {
         KMSpawnedObject lsp = spawnEntity(path, params);
         lastSpawnedObject = lsp;
         lastSpawnedObject.params = params;
@@ -603,8 +603,8 @@ namespace spawner {
         return processed;
     }
 
-    std::vector<spawnerCatagory> enumerateSpawnableObjects() {
-        std::vector<spawnerCatagory> returnObj = {};
+    std::vector<spawnerCategory> enumerateSpawnableObjects() {
+        std::vector<spawnerCategory> returnObj = {};
         for (const auto& file : fs::directory_iterator("KM_Vox"))
         {
             int voxCount = 0;
@@ -612,7 +612,7 @@ namespace spawner {
             // /\ iterate over each folder within [KM_Vox]
             std::string path = file.path().string();
             std::string catig = path.substr(7, path.size() - 7);
-            spawnerCatagory current;
+            spawnerCategory current;
             current.name = catig;
 
             for (const auto& catagoryFolder : fs::directory_iterator(file.path()))
@@ -685,7 +685,7 @@ namespace spawner {
     }
 
     //drops an object infront of the player
-    spawnedObject throwFreeObject(std::string filepath, thrownObjectSpawnParams params) {
+    spawnedObject throwFreeObject(const std::string& filepath, thrownObjectSpawnParams params) {
         spawnedObject object = {};
         freeObjectSpawnParams parsedParams = {};
         parsedParams.attributes = params.attributes;
@@ -810,7 +810,7 @@ namespace spawner {
     }
 
     //spawns a free object wherever the player is looking
-    spawnedObject placeFreeObject(std::string filepath, freeObjectSpawnParams params) {
+    spawnedObject placeFreeObject(const std::string& filepath, freeObjectSpawnParams params) {
         raycaster::rayData rd = raycaster::castRayPlayer();
 
         spawnedObject object = {};
@@ -877,7 +877,7 @@ namespace spawner {
 
         return object;
     }
-    bool spawnFreeEntity(std::string filepath, freeObjectSpawnParams params, spawnedObject* object) {
+    bool spawnFreeEntity(const std::string& filepath, freeObjectSpawnParams params, spawnedObject* object) {
         if (!exists(filepath)) {
             std::cout << "[E] no file" << std::endl;
             return false;
@@ -933,7 +933,7 @@ namespace spawner {
         return true;
     }
 
-    spawnedObject placeChildObject(std::string filepath, childObjectSpawnParams params) {
+    spawnedObject placeChildObject(const std::string& filepath, childObjectSpawnParams params) {
         raycaster::rayData rd = raycaster::castRayPlayer();
 
         spawnedObject object = {};
@@ -1001,7 +1001,7 @@ namespace spawner {
         return object;
     }
 
-    bool spawnChildEntity(std::string filepath, childObjectSpawnParams params, spawnedObject* object) {
+    bool spawnChildEntity(const std::string& filepath, childObjectSpawnParams params, spawnedObject* object) {
         if (!exists(filepath)) {
             std::cout << "[E] no file" << std::endl;
             return false;
@@ -1050,7 +1050,7 @@ namespace spawner {
         return true;
     }
 
-    KMSpawnedObject spawnEntity(std::string filepath, objectSpawnerParams osp) {
+    KMSpawnedObject spawnEntity(const std::string& filepath, objectSpawnerParams osp) {
         if (!exists(filepath)) {
             std::cout << "[E] no file" << std::endl;
             return { defaultParams, false, 0, 0 };

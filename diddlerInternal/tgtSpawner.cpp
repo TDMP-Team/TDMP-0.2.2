@@ -7,7 +7,7 @@
 tgt_spawner::tgt_spawner() {
 	tool = TOOL_SPAWNER;
 
-    for (spawner::spawnerCatagory catig : spawner::spawnerObjectsDatabase) {
+    for (spawner::spawnerCategory catig : spawner::spawnerObjectsDatabase) {
         for (spawner::LoadedSpawnableObject object : catig.objects) {
             if (object.objectName == "brick_metal") {
                 currentSpawngunObject = object;
