@@ -14,6 +14,8 @@
 #include "threadedCamera.h"
 #include "TDObjects.h"
 
+#include <algorithm>
+
 #define rndLvl 16
 
 namespace threadCamera {
