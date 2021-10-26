@@ -1,7 +1,7 @@
 #pragma once
 
 #include "tgtBase.h"
-#include "global.h"
+#include "Global.h"
 
 struct tgt_weld : public tgt {
     bool weldStageOne = true;

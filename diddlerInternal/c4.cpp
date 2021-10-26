@@ -1,4 +1,4 @@
-#include "global.h"
+#include "Global.h"
 #include "Raycaster.h"
 #include "objectSpawner.h"
 #include "TDObjects.h"

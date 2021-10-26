@@ -1,4 +1,4 @@
-#include "global.h"
+#include "Global.h"
 #include "TDObjects.h"
 #include "glm/gtx/quaternion.hpp"
 

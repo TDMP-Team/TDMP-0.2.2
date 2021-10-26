@@ -1,7 +1,7 @@
 #pragma once
 
 #include "tgtBase.h"
-#include "global.h"
+#include "Global.h"
 
 struct tgt_explode : public tgt {
     int bulletCount = 1;
