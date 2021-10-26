@@ -74,9 +74,9 @@ namespace threadCamera {
 		resolutionY = resY;
 
         bufferShow.resize(resolutionX * resolutionY);
-        std::fill(bufferShow.begin(), bufferShow.end(), 0);
+        std::fill(bufferShow.begin(), bufferShow.end(), pixel{0,0,0,0});
         bufferWrite.resize(resolutionX * resolutionY);
-        std::fill(bufferWrite.begin(), bufferWrite.end(), 0);
+        std::fill(bufferWrite.begin(), bufferWrite.end(), pixel{0,0,0,0});
         bufferDistances.resize(resolutionX * resolutionY);
         std::fill(bufferDistances.begin(), bufferDistances.end(), 0.0f);
 
@@ -161,8 +161,8 @@ namespace threadCamera {
 			resolutionY = nextResolutionX;
 			bufferUpdateNeeded = false;
 
-            std::fill(bufferShow.begin(), bufferShow.end(), 0);
-            std::fill(bufferWrite.begin(), bufferWrite.end(), 0);
+            std::fill(bufferShow.begin(), bufferShow.end(), pixel{0,0,0,0});
+            std::fill(bufferWrite.begin(), bufferWrite.end(), pixel{0,0,0,0});
 		}
 
 		if (cameraDestroyed) {
