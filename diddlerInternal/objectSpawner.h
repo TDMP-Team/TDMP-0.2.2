@@ -128,7 +128,7 @@ namespace spawner {
 	void switchRotationStep(WPARAM wParam);
 	void drawSpawngunObjectOutline(TDVox* currentVox, raycaster::rayData rd, bool usingSnapPoints, glm::quat parentRotation, snapPoint point);
 	spawnedObject throwFreeObject(const std::string& filepath, const thrownObjectSpawnParams& params);
-	spawnedObject placeChildObject(const std::string& filepath, const childObjectSpawnParams& params = {});
+	spawnedObject placeChildObject(const std::string& filepath, childObjectSpawnParams params = {});
 	bool spawnChildEntity(const std::string& filepath, const childObjectSpawnParams& params, spawnedObject* object);
 	spawnedObject placeFreeObject(const std::string& filepath, const freeObjectSpawnParams& params = {});
 	bool spawnFreeEntity(const std::string& filepath, const freeObjectSpawnParams& params, spawnedObject* object);

@@ -933,7 +933,7 @@ namespace spawner {
         return true;
     }
 
-    spawnedObject placeChildObject(const std::string& filepath, const childObjectSpawnParams& params) {
+    spawnedObject placeChildObject(const std::string& filepath, childObjectSpawnParams params) {
         raycaster::rayData rd = raycaster::castRayPlayer();
 
         spawnedObject object = {};
