@@ -150,7 +150,7 @@ public:
 	char pad_00E6[2]; //0x00E6
 
 	int countContainedShapes() {
-		Entity* shapePtr = this->pChild;
+		Entity* shapePtr = pChild;
 		int counter = 0;
 		while (shapePtr != 0) {
 			shapePtr = shapePtr->pSibling;
@@ -190,7 +190,7 @@ public:
 	char pad_00AD[3]; //0x00AD
 
 	TDBody* getParentBody() {
-		return (TDBody*)(this->pParent);
+		return (TDBody*)(pParent);
 	}
 }; //Size: 0xB0
 

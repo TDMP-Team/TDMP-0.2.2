@@ -65,7 +65,7 @@ namespace threadCamera {
 	}
 
 	KMCamera::KMCamera(glm::quat rot, glm::vec3 pos, glm::vec3 forwv, glm::vec3 upv, int resX, int resY) {
-		this->cameraActive = false;
+		cameraActive = false;
 
 		glGenTextures(1, (GLuint*)camTexture);
 		resolutionX = resX;
