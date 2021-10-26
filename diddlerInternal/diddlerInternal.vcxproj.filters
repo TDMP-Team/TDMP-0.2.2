@@ -1,0 +1,545 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;c++;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hh;hpp;hxx;h++;hm;inl;inc;ipp;xsd</Extensions>
+    </Filter>
+    <Filter Include="Resource Files">
+      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
+      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
+    </Filter>
+    <Filter Include="Header Files\imgui">
+      <UniqueIdentifier>{6a6dcd34-6fd4-4b27-b348-3a36a0f414b1}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Misc">
+      <UniqueIdentifier>{9573f2e4-3dac-4c34-af46-ca23a62e99a5}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\ImGui">
+      <UniqueIdentifier>{f82d844d-f4ba-47d7-b878-ce287e303e4f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\TDAPI">
+      <UniqueIdentifier>{5e636a36-fe0b-42ef-90c1-ea394ebb5f73}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\TDAPI">
+      <UniqueIdentifier>{1f5f57c9-69f3-497a-a489-eabd135b80cb}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Mods">
+      <UniqueIdentifier>{2f4f7e63-804d-4490-ae31-32ed4fa571d3}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Mods">
+      <UniqueIdentifier>{d62f6227-a411-4521-8f9e-59777245d2fa}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\misc">
+      <UniqueIdentifier>{de68cac9-28c1-4841-b1fc-2cd1f4641cdf}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\toolgunTools">
+      <UniqueIdentifier>{b0a172d0-0476-4d90-b4ca-90daf2051c89}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\toolgunTools">
+      <UniqueIdentifier>{c1f96240-de7e-490f-b9ea-880561577c77}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Mods\deprecated">
+      <UniqueIdentifier>{60ee8e6b-219f-489f-8d62-b8efc966fe7f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Mods\deprecated">
+      <UniqueIdentifier>{1b07feb1-02d8-4ad3-8158-9eb2632f0e95}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\wire">
+      <UniqueIdentifier>{1095a3af-337c-4275-b093-99bb1de16130}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\wire">
+      <UniqueIdentifier>{fb829142-99a0-4db0-b770-075d7ddb7a6a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Multiplayer">
+      <UniqueIdentifier>{e5ea5efa-ca17-4b02-a44d-5f780753a625}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="mem.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="types.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="imgui\imgui.h">
+      <Filter>Header Files\imgui</Filter>
+    </ClInclude>
+    <ClInclude Include="imgui\imgui_impl_opengl3.h">
+      <Filter>Header Files\imgui</Filter>
+    </ClInclude>
+    <ClInclude Include="imgui\imgui_impl_win32.h">
+      <Filter>Header Files\imgui</Filter>
+    </ClInclude>
+    <ClInclude Include="imgui\imgui_internal.h">
+      <Filter>Header Files\imgui</Filter>
+    </ClInclude>
+    <ClInclude Include="imgui\imstb_rectpack.h">
+      <Filter>Header Files\imgui</Filter>
+    </ClInclude>
+    <ClInclude Include="imgui\imstb_textedit.h">
+      <Filter>Header Files\imgui</Filter>
+    </ClInclude>
+    <ClInclude Include="imgui\imstb_truetype.h">
+      <Filter>Header Files\imgui</Filter>
+    </ClInclude>
+    <ClInclude Include="imgui\imconfig.h">
+      <Filter>Header Files\imgui</Filter>
+    </ClInclude>
+    <ClInclude Include="framework.h">
+      <Filter>Header Files\Misc</Filter>
+    </ClInclude>
+    <ClInclude Include="detours.h">
+      <Filter>Header Files\Misc</Filter>
+    </ClInclude>
+    <ClInclude Include="detver.h">
+      <Filter>Header Files\Misc</Filter>
+    </ClInclude>
+    <ClInclude Include="Global.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="swapBuffers.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="TDFuncs.h">
+      <Filter>Header Files\TDAPI</Filter>
+    </ClInclude>
+    <ClInclude Include="TDObjects.h">
+      <Filter>Header Files\TDAPI</Filter>
+    </ClInclude>
+    <ClInclude Include="Raycaster.h">
+      <Filter>Header Files\TDAPI</Filter>
+    </ClInclude>
+    <ClInclude Include="Mods.h">
+      <Filter>Header Files\Mods</Filter>
+    </ClInclude>
+    <ClInclude Include="Flamethrower.h">
+      <Filter>Header Files\Mods</Filter>
+    </ClInclude>
+    <ClInclude Include="drawCube.h">
+      <Filter>Header Files\TDAPI</Filter>
+    </ClInclude>
+    <ClInclude Include="objectSpawner.h">
+      <Filter>Header Files\Mods</Filter>
+    </ClInclude>
+    <ClInclude Include="hookTests.h">
+      <Filter>Header Files\Mods</Filter>
+    </ClInclude>
+    <ClInclude Include="godmode.h">
+      <Filter>Header Files\Mods</Filter>
+    </ClInclude>
+    <ClInclude Include="cutter.h">
+      <Filter>Header Files\Mods</Filter>
+    </ClInclude>
+    <ClInclude Include="stb_image.h">
+      <Filter>Header Files\Misc</Filter>
+    </ClInclude>
+    <ClInclude Include="maths.h">
+      <Filter>Header Files\Misc</Filter>
+    </ClInclude>
+    <ClInclude Include="noclip.h">
+      <Filter>Header Files\Mods</Filter>
+    </ClInclude>
+    <ClInclude Include="c4.h">
+      <Filter>Header Files\Mods</Filter>
+    </ClInclude>
+    <ClInclude Include="mainHook.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="camera.h">
+      <Filter>Header Files\Mods</Filter>
+    </ClInclude>
+    <ClInclude Include="lantern.h">
+      <Filter>Header Files\Mods</Filter>
+    </ClInclude>
+    <ClInclude Include="miscPatches.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="movementLoop.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="memhandler.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="resource.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="glm\trigonometric.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="focusHook.h">
+      <Filter>Header Files\Mods</Filter>
+    </ClInclude>
+    <ClInclude Include="lidar.h">
+      <Filter>Header Files\Mods</Filter>
+    </ClInclude>
+    <ClInclude Include="physCamera.h">
+      <Filter>Header Files\Mods</Filter>
+    </ClInclude>
+    <ClInclude Include="dotProjector.h">
+      <Filter>Header Files\TDAPI</Filter>
+    </ClInclude>
+    <ClInclude Include="objectTranslationTest.h">
+      <Filter>Header Files\TDAPI</Filter>
+    </ClInclude>
+    <ClInclude Include="cameraManager.h">
+      <Filter>Header Files\TDAPI</Filter>
+    </ClInclude>
+    <ClInclude Include="constClock.h">
+      <Filter>Header Files\Misc</Filter>
+    </ClInclude>
+    <ClInclude Include="console.h">
+      <Filter>Header Files\Misc</Filter>
+    </ClInclude>
+    <ClInclude Include="threadedCamera.h">
+      <Filter>Header Files\Mods</Filter>
+    </ClInclude>
+    <ClInclude Include="tgtBase.h">
+      <Filter>Header Files\toolgunTools</Filter>
+    </ClInclude>
+    <ClInclude Include="tgtSpawner.h">
+      <Filter>Header Files\toolgunTools</Filter>
+    </ClInclude>
+    <ClInclude Include="Firespread.h">
+      <Filter>Header Files\Mods\deprecated</Filter>
+    </ClInclude>
+    <ClInclude Include="envOptions.h">
+      <Filter>Header Files\Mods\deprecated</Filter>
+    </ClInclude>
+    <ClInclude Include="Harop.h">
+      <Filter>Header Files\Mods\deprecated</Filter>
+    </ClInclude>
+    <ClInclude Include="Jetpack.h">
+      <Filter>Header Files\Mods\deprecated</Filter>
+    </ClInclude>
+    <ClInclude Include="missileLauncher.h">
+      <Filter>Header Files\Mods\deprecated</Filter>
+    </ClInclude>
+    <ClInclude Include="physMonitor.h">
+      <Filter>Header Files\Mods\deprecated</Filter>
+    </ClInclude>
+    <ClInclude Include="thirdperson.h">
+      <Filter>Header Files\Mods\deprecated</Filter>
+    </ClInclude>
+    <ClInclude Include="toolgun.h">
+      <Filter>Header Files\toolgunTools</Filter>
+    </ClInclude>
+    <ClInclude Include="tgtMinigun.h">
+      <Filter>Header Files\toolgunTools</Filter>
+    </ClInclude>
+    <ClInclude Include="tgtWeld.h">
+      <Filter>Header Files\toolgunTools</Filter>
+    </ClInclude>
+    <ClInclude Include="tgtRope.h">
+      <Filter>Header Files\toolgunTools</Filter>
+    </ClInclude>
+    <ClInclude Include="tgtExplode.h">
+      <Filter>Header Files\toolgunTools</Filter>
+    </ClInclude>
+    <ClInclude Include="tgtCamera.h">
+      <Filter>Header Files\toolgunTools</Filter>
+    </ClInclude>
+    <ClInclude Include="tgtFlamethrower.h">
+      <Filter>Header Files\toolgunTools</Filter>
+    </ClInclude>
+    <ClInclude Include="tgtDamage.h">
+      <Filter>Header Files\toolgunTools</Filter>
+    </ClInclude>
+    <ClInclude Include="tgtRemove.h">
+      <Filter>Header Files\toolgunTools</Filter>
+    </ClInclude>
+    <ClInclude Include="tgtAttribute.h">
+      <Filter>Header Files\toolgunTools</Filter>
+    </ClInclude>
+    <ClInclude Include="tgtLeafblower.h">
+      <Filter>Header Files\toolgunTools</Filter>
+    </ClInclude>
+    <ClInclude Include="tgtSlice.h">
+      <Filter>Header Files\toolgunTools</Filter>
+    </ClInclude>
+    <ClInclude Include="tgtDebug.h">
+      <Filter>Header Files\toolgunTools</Filter>
+    </ClInclude>
+    <ClInclude Include="tgtDev.h">
+      <Filter>Header Files\toolgunTools</Filter>
+    </ClInclude>
+    <ClInclude Include="tgtIncludes.h">
+      <Filter>Header Files\toolgunTools</Filter>
+    </ClInclude>
+    <ClInclude Include="snapPoints.h">
+      <Filter>Header Files\Misc</Filter>
+    </ClInclude>
+    <ClInclude Include="balloons.h">
+      <Filter>Header Files\Mods</Filter>
+    </ClInclude>
+    <ClInclude Include="tgtBalloon.h">
+      <Filter>Header Files\toolgunTools</Filter>
+    </ClInclude>
+    <ClInclude Include="wireObjectBase.h">
+      <Filter>Header Files\wire</Filter>
+    </ClInclude>
+    <ClInclude Include="wireObjectSpawn.h">
+      <Filter>Header Files\wire</Filter>
+    </ClInclude>
+    <ClInclude Include="wireObjectKernel.h">
+      <Filter>Header Files\wire</Filter>
+    </ClInclude>
+    <ClInclude Include="wirePlacementIntBus.h">
+      <Filter>Header Files\wire</Filter>
+    </ClInclude>
+    <ClInclude Include="wirePlacements.h">
+      <Filter>Header Files\wire</Filter>
+    </ClInclude>
+    <ClInclude Include="multiplayer\Client.h">
+      <Filter>Multiplayer</Filter>
+    </ClInclude>
+    <ClInclude Include="multiplayer\Compresser.h">
+      <Filter>Multiplayer</Filter>
+    </ClInclude>
+    <ClInclude Include="multiplayer\Lobby.h">
+      <Filter>Multiplayer</Filter>
+    </ClInclude>
+    <ClInclude Include="multiplayer\Main.h">
+      <Filter>Multiplayer</Filter>
+    </ClInclude>
+    <ClInclude Include="multiplayer\Messages.h">
+      <Filter>Multiplayer</Filter>
+    </ClInclude>
+    <ClInclude Include="multiplayer\Player.h">
+      <Filter>Multiplayer</Filter>
+    </ClInclude>
+    <ClInclude Include="multiplayer\Server.h">
+      <Filter>Multiplayer</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="dllmain.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="mem.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="imgui\imgui.cpp">
+      <Filter>Source Files\ImGui</Filter>
+    </ClCompile>
+    <ClCompile Include="imgui\imgui_demo.cpp">
+      <Filter>Source Files\ImGui</Filter>
+    </ClCompile>
+    <ClCompile Include="imgui\imgui_draw.cpp">
+      <Filter>Source Files\ImGui</Filter>
+    </ClCompile>
+    <ClCompile Include="imgui\imgui_impl_opengl3.cpp">
+      <Filter>Source Files\ImGui</Filter>
+    </ClCompile>
+    <ClCompile Include="imgui\imgui_impl_win32.cpp">
+      <Filter>Source Files\ImGui</Filter>
+    </ClCompile>
+    <ClCompile Include="imgui\imgui_widgets.cpp">
+      <Filter>Source Files\ImGui</Filter>
+    </ClCompile>
+    <ClCompile Include="swapBuffers.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Global.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="TDFuncs.cpp">
+      <Filter>Source Files\TDAPI</Filter>
+    </ClCompile>
+    <ClCompile Include="TDObjects.cpp">
+      <Filter>Source Files\TDAPI</Filter>
+    </ClCompile>
+    <ClCompile Include="Raycaster.cpp">
+      <Filter>Source Files\TDAPI</Filter>
+    </ClCompile>
+    <ClCompile Include="Mods.cpp">
+      <Filter>Source Files\Mods</Filter>
+    </ClCompile>
+    <ClCompile Include="Flamethrower.cpp">
+      <Filter>Source Files\Mods</Filter>
+    </ClCompile>
+    <ClCompile Include="drawCube.cpp">
+      <Filter>Source Files\TDAPI</Filter>
+    </ClCompile>
+    <ClCompile Include="objectSpawner.cpp">
+      <Filter>Source Files\Mods</Filter>
+    </ClCompile>
+    <ClCompile Include="hookTests.cpp">
+      <Filter>Source Files\Mods</Filter>
+    </ClCompile>
+    <ClCompile Include="godmode.cpp">
+      <Filter>Source Files\Mods</Filter>
+    </ClCompile>
+    <ClCompile Include="cutter.cpp">
+      <Filter>Source Files\Mods</Filter>
+    </ClCompile>
+    <ClCompile Include="maths.cpp">
+      <Filter>Source Files\misc</Filter>
+    </ClCompile>
+    <ClCompile Include="noclip.cpp">
+      <Filter>Source Files\Mods</Filter>
+    </ClCompile>
+    <ClCompile Include="c4.cpp">
+      <Filter>Source Files\Mods</Filter>
+    </ClCompile>
+    <ClCompile Include="mainHook.cpp">
+      <Filter>Source Files\Mods</Filter>
+    </ClCompile>
+    <ClCompile Include="camera.cpp">
+      <Filter>Source Files\Mods</Filter>
+    </ClCompile>
+    <ClCompile Include="miscPatches.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="movementLoop.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="types.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="memhandler.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="focusHook.cpp">
+      <Filter>Source Files\Mods</Filter>
+    </ClCompile>
+    <ClCompile Include="lidar.cpp">
+      <Filter>Source Files\Mods</Filter>
+    </ClCompile>
+    <ClCompile Include="physCamera.cpp">
+      <Filter>Source Files\Mods</Filter>
+    </ClCompile>
+    <ClCompile Include="dotProjector.cpp">
+      <Filter>Source Files\TDAPI</Filter>
+    </ClCompile>
+    <ClCompile Include="objectTranslationTest.cpp">
+      <Filter>Source Files\TDAPI</Filter>
+    </ClCompile>
+    <ClCompile Include="Firespread.cpp">
+      <Filter>Source Files\Mods</Filter>
+    </ClCompile>
+    <ClCompile Include="cameraManager.cpp">
+      <Filter>Source Files\TDAPI</Filter>
+    </ClCompile>
+    <ClCompile Include="constClock.cpp">
+      <Filter>Source Files\misc</Filter>
+    </ClCompile>
+    <ClCompile Include="console.cpp">
+      <Filter>Source Files\misc</Filter>
+    </ClCompile>
+    <ClCompile Include="threadedCamera.cpp">
+      <Filter>Source Files\Mods</Filter>
+    </ClCompile>
+    <ClCompile Include="tgtSpawner.cpp">
+      <Filter>Source Files\toolgunTools</Filter>
+    </ClCompile>
+    <ClCompile Include="envOptions.cpp">
+      <Filter>Source Files\Mods\deprecated</Filter>
+    </ClCompile>
+    <ClCompile Include="Harop.cpp">
+      <Filter>Source Files\Mods\deprecated</Filter>
+    </ClCompile>
+    <ClCompile Include="Jetpack.cpp">
+      <Filter>Source Files\Mods\deprecated</Filter>
+    </ClCompile>
+    <ClCompile Include="lantern.cpp">
+      <Filter>Source Files\Mods\deprecated</Filter>
+    </ClCompile>
+    <ClCompile Include="missileLauncher.cpp">
+      <Filter>Source Files\Mods\deprecated</Filter>
+    </ClCompile>
+    <ClCompile Include="physMonitor.cpp">
+      <Filter>Source Files\Mods\deprecated</Filter>
+    </ClCompile>
+    <ClCompile Include="thirdperson.cpp">
+      <Filter>Source Files\Mods\deprecated</Filter>
+    </ClCompile>
+    <ClCompile Include="toolgun.cpp">
+      <Filter>Source Files\toolgunTools</Filter>
+    </ClCompile>
+    <ClCompile Include="tgtMinigun.cpp">
+      <Filter>Source Files\toolgunTools</Filter>
+    </ClCompile>
+    <ClCompile Include="tgtWeld.cpp">
+      <Filter>Source Files\toolgunTools</Filter>
+    </ClCompile>
+    <ClCompile Include="tgtRope.cpp">
+      <Filter>Source Files\toolgunTools</Filter>
+    </ClCompile>
+    <ClCompile Include="tgtExplode.cpp">
+      <Filter>Source Files\toolgunTools</Filter>
+    </ClCompile>
+    <ClCompile Include="tgtCamera.cpp">
+      <Filter>Source Files\toolgunTools</Filter>
+    </ClCompile>
+    <ClCompile Include="tgtFlamethrower.cpp">
+      <Filter>Source Files\toolgunTools</Filter>
+    </ClCompile>
+    <ClCompile Include="tgtDamage.cpp">
+      <Filter>Source Files\toolgunTools</Filter>
+    </ClCompile>
+    <ClCompile Include="tgtRemove.cpp">
+      <Filter>Source Files\toolgunTools</Filter>
+    </ClCompile>
+    <ClCompile Include="tgtAttribute.cpp">
+      <Filter>Source Files\toolgunTools</Filter>
+    </ClCompile>
+    <ClCompile Include="tgtLeafblower.cpp">
+      <Filter>Source Files\toolgunTools</Filter>
+    </ClCompile>
+    <ClCompile Include="tgtSlice.cpp">
+      <Filter>Source Files\toolgunTools</Filter>
+    </ClCompile>
+    <ClCompile Include="tgtDebug.cpp">
+      <Filter>Source Files\toolgunTools</Filter>
+    </ClCompile>
+    <ClCompile Include="tgtDev.cpp">
+      <Filter>Source Files\toolgunTools</Filter>
+    </ClCompile>
+    <ClCompile Include="snapPoints.cpp">
+      <Filter>Source Files\misc</Filter>
+    </ClCompile>
+    <ClCompile Include="balloons.cpp">
+      <Filter>Source Files\Mods</Filter>
+    </ClCompile>
+    <ClCompile Include="tgtBalloon.cpp">
+      <Filter>Source Files\toolgunTools</Filter>
+    </ClCompile>
+    <ClCompile Include="wireObjectBase.cpp">
+      <Filter>Source Files\wire</Filter>
+    </ClCompile>
+    <ClCompile Include="wireObjectSpawn.cpp">
+      <Filter>Source Files\wire</Filter>
+    </ClCompile>
+    <ClCompile Include="wireObjectKernel.cpp">
+      <Filter>Source Files\wire</Filter>
+    </ClCompile>
+    <ClCompile Include="wirePlacementIntBus.cpp">
+      <Filter>Source Files\wire</Filter>
+    </ClCompile>
+    <ClCompile Include="multiplayer\Client.cpp">
+      <Filter>Multiplayer</Filter>
+    </ClCompile>
+    <ClCompile Include="multiplayer\Lobby.cpp">
+      <Filter>Multiplayer</Filter>
+    </ClCompile>
+    <ClCompile Include="multiplayer\Main.cpp">
+      <Filter>Multiplayer</Filter>
+    </ClCompile>
+    <ClCompile Include="multiplayer\Player.cpp">
+      <Filter>Multiplayer</Filter>
+    </ClCompile>
+    <ClCompile Include="multiplayer\Server.cpp">
+      <Filter>Multiplayer</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="diddlerInternal.rc">
+      <Filter>Resource Files</Filter>
+    </ResourceCompile>
+  </ItemGroup>
+</Project>
