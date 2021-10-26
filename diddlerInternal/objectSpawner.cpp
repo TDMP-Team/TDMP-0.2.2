@@ -408,7 +408,7 @@ namespace spawner {
     }
 
   
-    KMSpawnedObject spawnObjectProxy(const std::string& path, objectSpawnerParams params) {
+    KMSpawnedObject spawnObjectProxy(const std::string& path, const objectSpawnerParams& params) {
         KMSpawnedObject lsp = spawnEntity(path, params);
         lastSpawnedObject = lsp;
         lastSpawnedObject.params = params;
@@ -685,7 +685,7 @@ namespace spawner {
     }
 
     //drops an object infront of the player
-    spawnedObject throwFreeObject(const std::string& filepath, thrownObjectSpawnParams params) {
+    spawnedObject throwFreeObject(const std::string& filepath, const thrownObjectSpawnParams& params) {
         spawnedObject object = {};
         freeObjectSpawnParams parsedParams = {};
         parsedParams.attributes = params.attributes;
@@ -763,7 +763,7 @@ namespace spawner {
 
         return object;
     }
-    bool spawnDuplicatedObject(TDVox* cloneTarget, freeObjectSpawnParams params, spawnedObject* object) {
+    bool spawnDuplicatedObject(TDVox* cloneTarget, const freeObjectSpawnParams& params, spawnedObject* object) {
         if (!cloneTarget) {
             return false;
         }
@@ -810,7 +810,7 @@ namespace spawner {
     }
 
     //spawns a free object wherever the player is looking
-    spawnedObject placeFreeObject(const std::string& filepath, freeObjectSpawnParams params) {
+    spawnedObject placeFreeObject(const std::string& filepath, const freeObjectSpawnParams& params) {
         raycaster::rayData rd = raycaster::castRayPlayer();
 
         spawnedObject object = {};
@@ -877,7 +877,7 @@ namespace spawner {
 
         return object;
     }
-    bool spawnFreeEntity(const std::string& filepath, freeObjectSpawnParams params, spawnedObject* object) {
+    bool spawnFreeEntity(const std::string& filepath, const freeObjectSpawnParams& params, spawnedObject* object) {
         if (!exists(filepath)) {
             std::cout << "[E] no file" << std::endl;
             return false;
@@ -933,7 +933,7 @@ namespace spawner {
         return true;
     }
 
-    spawnedObject placeChildObject(const std::string& filepath, childObjectSpawnParams params) {
+    spawnedObject placeChildObject(const std::string& filepath, const childObjectSpawnParams& params) {
         raycaster::rayData rd = raycaster::castRayPlayer();
 
         spawnedObject object = {};
@@ -1001,7 +1001,7 @@ namespace spawner {
         return object;
     }
 
-    bool spawnChildEntity(const std::string& filepath, childObjectSpawnParams params, spawnedObject* object) {
+    bool spawnChildEntity(const std::string& filepath, const childObjectSpawnParams& params, spawnedObject* object) {
         if (!exists(filepath)) {
             std::cout << "[E] no file" << std::endl;
             return false;
@@ -1050,7 +1050,7 @@ namespace spawner {
         return true;
     }
 
-    KMSpawnedObject spawnEntity(const std::string& filepath, objectSpawnerParams osp) {
+    KMSpawnedObject spawnEntity(const std::string& filepath, const objectSpawnerParams& osp) {
         if (!exists(filepath)) {
             std::cout << "[E] no file" << std::endl;
             return { defaultParams, false, 0, 0 };
