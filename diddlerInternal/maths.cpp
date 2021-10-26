@@ -5,7 +5,7 @@
 #include "glm/glm.hpp"
 #include "glm/gtc/quaternion.hpp"
 
-const long pi = 3.1415926535;
+const double pi = 3.1415926535L;
 
 td::Vec3 quat2euler(td::Vec4 quat, int rot = 0, bool invert = false) {
     if (rot == 0) {

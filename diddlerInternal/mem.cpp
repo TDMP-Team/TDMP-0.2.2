@@ -1,7 +1,7 @@
 #include "mem.h"
-#include <Windows.h>
-#include <TlHelp32.h>
-#include <Psapi.h>
+#include <windows.h>
+#include <tlHelp32.h>
+#include <psapi.h>
 #include <winternl.h>
 
 //https://guidedhacking.com/threads/how-to-hack-any-game-first-internal-hack-dll-tutorial.12142/
