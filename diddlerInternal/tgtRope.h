@@ -1,6 +1,6 @@
 #pragma once
 #include "tgtBase.h"
-#include "global.h"
+#include "Global.h"
 #include "types.h"
 #include "TDObjects.h"
 

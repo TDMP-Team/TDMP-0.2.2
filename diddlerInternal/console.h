@@ -1,5 +1,5 @@
 #pragma once
-#include "windows.h"
+#include <windows.h>
 #include <string>
 
 #define COMM_OK          0x01

@@ -68,7 +68,7 @@ void TDMP::Client::SendData(const void* pData, uint32 nSizeOfData, int nSendFlag
 		return;
 	}
 
-	EResult res = SteamNetworkingSockets()->SendMessageToConnection(this->serverHandle, pData, nSizeOfData, nSendFlags, nullptr);
+	EResult res = SteamNetworkingSockets()->SendMessageToConnection(serverHandle, pData, nSizeOfData, nSendFlags, nullptr);
 
 	switch (res)
 	{

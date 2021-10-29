@@ -16,8 +16,8 @@ namespace wireObjects {
 	}
 
 	bool wireObj::getClosestNode(glm::vec3 worldPos, wireNode** out) {
-		if (!this) { printf_s("THIS is null\n");  return false; }
-		if (housing && !this->destroyed) {
+        assert(this); // FIXME: well-defined C++ should not need this. remove.
+		if (housing && !destroyed) {
 			glm::quat targetShapeWorldrotation = math::expandRotation(math::q_td2glm(housing->getParentBody()->Rotation), math::q_td2glm(housing->rOffset));
 			glm::vec3 targetShapeWorldPosition = math::expandPosition(math::q_td2glm(housing->getParentBody()->Rotation), math::v3_td2glm(housing->getParentBody()->Position), math::v3_td2glm(housing->pOffset));
 
@@ -30,7 +30,7 @@ namespace wireObjects {
 			float closestDist = INT32_MAX;
 			wireNode* closest = 0;
 
-			for (wireNode* n : this->nodes) {
+			for (wireNode* n : nodes) {
 				glm::vec3 nodePos = n->getPosition();
 				float dist = sqrt(pow(localPosition.x - nodePos.x, 2) + pow(localPosition.y - nodePos.y, 2) + pow(localPosition.z - nodePos.z, 2));
 				if (dist < closestDist && dist < maxDist) {
@@ -50,7 +50,7 @@ namespace wireObjects {
 	}
 
 	DWORD wireObj::drawNodes(wireNode* selected) {
-		if (housing && !this->destroyed) {
+		if (housing && !destroyed) {
 			glm::quat targetShapeWorldrotation = math::expandRotation(math::q_td2glm(housing->getParentBody()->Rotation), math::q_td2glm(housing->rOffset));
 			glm::vec3 targetShapeWorldPosition = math::expandPosition(math::q_td2glm(housing->getParentBody()->Rotation), math::v3_td2glm(housing->getParentBody()->Position), math::v3_td2glm(housing->pOffset));
 
@@ -58,7 +58,7 @@ namespace wireObjects {
 			glm::vec3 vy = targetShapeWorldrotation * glm::vec3(0, 1, 0);
 			glm::vec3 vz = targetShapeWorldrotation * glm::vec3(0, 0, 1); //(UP)
 
-			for (wireNode* n : this->nodes) {
+			for (wireNode* n : nodes) {
 				glm::vec3 testNodeLocalPosition = n->getPosition();
 				glm::vec3 assumedTestNodePosition = targetShapeWorldPosition + ((vz * testNodeLocalPosition.z) + (vy * testNodeLocalPosition.y) + (vx * testNodeLocalPosition.x));
 				float s = 0.05f;

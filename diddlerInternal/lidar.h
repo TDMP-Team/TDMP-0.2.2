@@ -1,5 +1,7 @@
 #pragma once
 
+#include "types.h"
+
 namespace lidar {
 	extern float zoom;
 	extern bool colour;

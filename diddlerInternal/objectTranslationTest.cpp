@@ -157,7 +157,7 @@ namespace objectTesting {
 		dbgObject.vox = getTarget.hitShape->pVox;
 
 		drawCube(dbgObject.body->Position, 0.05f, white);
-		td::Vec3 oSizeObj = { dbgObject.vox->sizeX, dbgObject.vox->sizeY, dbgObject.vox->sizeZ };
+		td::Vec3 oSizeObj = { float(dbgObject.vox->sizeX), float(dbgObject.vox->sizeY), float(dbgObject.vox->sizeZ) };
 		glm::vec3 boundaries = glm::vec3(dbgObject.vox->sizeX / 10.f, dbgObject.vox->sizeY / 10.f, dbgObject.vox->sizeZ / 10.f);
 
 		glm::vec3 bodyPos = glm::vec3(dbgObject.body->Position.x, dbgObject.body->Position.y, dbgObject.body->Position.z);

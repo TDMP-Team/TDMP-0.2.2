@@ -18,14 +18,14 @@ TDMP::Lobby::Lobby(uint64 lobbyID) :
 	TDMP::lobby = (Lobby*)this;
 	ChatHistory.clear();
 
-	SteamMatchmaking()->SetLobbyData(this->id, "game_starting", "0");
+	SteamMatchmaking()->SetLobbyData(id, "game_starting", "0");
 
 	UpdateData();
 }
 
 TDMP::Lobby::~Lobby()
 {
-	SteamMatchmaking()->LeaveLobby(this->id);
+	SteamMatchmaking()->LeaveLobby(id);
 }
 
 void TDMP::Lobby::OnLobbyGameCreated(LobbyGameCreated_t* pCallback)
@@ -37,16 +37,16 @@ void TDMP::Lobby::OnLobbyGameCreated(LobbyGameCreated_t* pCallback)
 
 void TDMP::Lobby::Leave()
 {
-	SteamMatchmaking()->LeaveLobby(this->id);
+	SteamMatchmaking()->LeaveLobby(id);
 	delete TDMP::lobby;
 	TDMP::lobby = nullptr;
 }
 
 bool TDMP::Lobby::IsMember(CSteamID steamID)
 {
-	for (int i = 0; i < SteamMatchmaking()->GetNumLobbyMembers(this->id); i++)
+	for (int i = 0; i < SteamMatchmaking()->GetNumLobbyMembers(id); i++)
 	{
-		if (SteamMatchmaking()->GetLobbyMemberByIndex(this->id, i) == steamID) {
+		if (SteamMatchmaking()->GetLobbyMemberByIndex(id, i) == steamID) {
 			return true;
 		}
 	}
@@ -56,7 +56,7 @@ bool TDMP::Lobby::IsMember(CSteamID steamID)
 
 bool TDMP::Lobby::IsHost(CSteamID steamID)
 {
-	return steamID == SteamMatchmaking()->GetLobbyOwner(this->id);
+	return steamID == SteamMatchmaking()->GetLobbyOwner(id);
 }
 
 /// <summary>
@@ -92,7 +92,7 @@ void TDMP::Lobby::OnLobbyEntered(LobbyEnter_t* pCallback, bool bIOFailure)
 
 void TDMP::Lobby::SendChatMessage(const char* msg)
 {
-	SteamMatchmaking()->SendLobbyChatMsg(this->id, msg, strlen(msg));
+	SteamMatchmaking()->SendLobbyChatMsg(id, msg, strlen(msg));
 }
 
 /// <summary>
@@ -110,7 +110,7 @@ void TDMP::Lobby::OnChatMessage(LobbyChatMsg_t* pCallback)
 	int cubData = sizeof(data);
 	EChatEntryType entryType;
 	CSteamID speaker;
-	int size = SteamMatchmaking()->GetLobbyChatEntry(this->id, pCallback->m_iChatID, &speaker, data, cubData, &entryType);
+	int size = SteamMatchmaking()->GetLobbyChatEntry(id, pCallback->m_iChatID, &speaker, data, cubData, &entryType);
 
 	std::string msg = "";
 	for (size_t i = 0; i < size; i++)
@@ -132,7 +132,7 @@ void TDMP::Lobby::OnChatMessage(LobbyChatMsg_t* pCallback)
 /// </summary>
 void TDMP::Lobby::OnMemberState(LobbyChatUpdate_t* pCallback)
 {
-	if (pCallback->m_ulSteamIDLobby != this->id)
+	if (pCallback->m_ulSteamIDLobby != id)
 		return; // If some bad guy trying to send message in lobby but he's not in this lobby - get a hell out of hea!
 
 	// If somebody (Not we) did something
@@ -157,6 +157,6 @@ void TDMP::Lobby::OnMemberState(LobbyChatUpdate_t* pCallback)
 
 void TDMP::Lobby::UpdateData()
 {
-	SteamFriends()->SetRichPresence("steam_player_group", std::to_string(this->id).c_str());
-	SteamFriends()->SetRichPresence("steam_player_group_size", std::to_string(SteamMatchmaking()->GetNumLobbyMembers(this->id)).c_str());
+	SteamFriends()->SetRichPresence("steam_player_group", std::to_string(id).c_str());
+	SteamFriends()->SetRichPresence("steam_player_group_size", std::to_string(SteamMatchmaking()->GetNumLobbyMembers(id)).c_str());
 }

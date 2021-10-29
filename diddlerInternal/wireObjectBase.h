@@ -75,17 +75,17 @@ namespace wireObjects {
 		int setValue(int val) { value = val; return val; }
 
 		void dispose() {
-			this->disconnect();
-			delete(this);
+			disconnect();
+			delete(this); // FIXME: This is not valid.
 		}
 
 		bool init(wireObj* parent, nodeType type, nodeColour colour, glm::vec3 position){
 			if (!isInit) {
-				this->parent = parent;
-				this->type = type;
-				this->relPosition = position;
-				this->colour = colour;
-				this->isInit = true;
+				parent = parent;
+				type = type;
+				relPosition = position;
+				colour = colour;
+				isInit = true;
 				return true;
 			}
 			return false;
@@ -107,7 +107,7 @@ namespace wireObjects {
 			else if (client == this) {
 				return wireObjects::nodeResponse::NR_Pebcak;
 			}
-			else if (client->getType() != this->getType()) {
+			else if (client->getType() != getType()) {
 				return wireObjects::nodeResponse::NR_TypeMissmatch;
 			}
 			else {

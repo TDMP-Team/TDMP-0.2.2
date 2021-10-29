@@ -2,6 +2,8 @@
 #include "drawCube.h"
 #include "Raycaster.h"
 
+#include <limits>
+
 namespace snapPoints {
 
 	bool pointNearPoint(glm::vec3 pointA, glm::vec3 pointB, float maxDist) {
@@ -15,7 +17,7 @@ namespace snapPoints {
 	bool getClosestSnapPoint(glm::vec3 sourcePoint, snapPointPackage snapPackage, float maxDist, snapPoint* out) {
 		bool hasSnapPoint = false;
 		snapPoint closest = { };
-		float closestDist = INT32_MAX;
+		float closestDist = std::numeric_limits<float>::max();
 		for (snapPoint sp : snapPackage.snapPoints) {
 			float dist = sqrt(pow(sourcePoint.x - sp.position.x, 2) + pow(sourcePoint.y - sp.position.y, 2) + pow(sourcePoint.z - sp.position.z, 2));
 			if (dist < closestDist && dist < maxDist) {

@@ -11,7 +11,7 @@
 #include <ctime>
 #include "detours.h"
 #include <mutex>
-#include "global.h"
+#include "Global.h"
 #include <fstream>
 #include <iostream>
 #include <filesystem>

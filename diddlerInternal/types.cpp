@@ -1,6 +1,6 @@
 #include "Global.h"
 #include "types.h"
-#include "global.h"
+#include "Global.h"
 
 namespace td {
 

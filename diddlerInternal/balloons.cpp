@@ -77,11 +77,11 @@ namespace balloons {
 
 				if (r2dp(b.body->Velocity.x) > 0.f) { b.body->Velocity.x -= 0.5f; }
 				else if (r2dp(b.body->Velocity.x) < 0.f) { b.body->Velocity.x += 0.5f; }
-				else { b.body->Velocity.x == 0.f; }
+				else { b.body->Velocity.x = 0.f; }
 
 				if (r2dp(b.body->Velocity.z) > 0.f) { b.body->Velocity.z -= 0.5f; }
 				else if (r2dp(b.body->Velocity.z) < 0.f) { b.body->Velocity.z += 0.5f; }
-				else { b.body->Velocity.z == 0.f; }
+				else { b.body->Velocity.z = 0.f; }
 			}
 		}
 

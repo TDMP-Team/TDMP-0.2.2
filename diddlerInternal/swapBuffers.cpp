@@ -282,7 +282,7 @@ bool hwglSwapBuffers(_In_ HDC hDc)
 		if (filter.IsActive()) {
 			collapse = 32;
 		}
-		for (spawner::spawnerCatagory catigory : spawner::spawnerObjectsDatabase) {
+		for (spawner::spawnerCategory catigory : spawner::spawnerObjectsDatabase) {
 			ImGui::Columns(8);
 			for (spawner::LoadedSpawnableObject lso : catigory.objects) {
 				if (filter.PassFilter(lso.basePath.c_str())) {

@@ -64,11 +64,9 @@ namespace threadCamera {
 		glm::vec3 forward = { 0, 0, 0 };
 		glm::vec3 up = { 0, 0, 0 };
 
-		pixel* bufferA = 0;
-		pixel* bufferB = 0;
-		pixel* bufferShow = bufferA;
-		pixel* bufferWrite = bufferB;
-		float* bufferDistances = 0;
+		std::vector<pixel> bufferShow;
+		std::vector<pixel> bufferWrite;
+		std::vector<float> bufferDistances;
 
 		KMCamera(glm::quat rot, glm::vec3 pos, glm::vec3 forwv, glm::vec3 upv, int resX, int resY);
 		void updateCameraSpecs(glm::quat rot, glm::vec3 pos, glm::vec3 forwv, glm::vec3 upv);

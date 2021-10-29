@@ -264,7 +264,7 @@ namespace nToolgun {
 //        if (createOrigionalSpawnObject) {
 //            //currentSpawngunObject = spawner::spawnerObjectsDatabase[0].objects[0];
 //
-//            for (spawner::spawnerCatagory catig : spawner::spawnerObjectsDatabase) {
+//            for (spawner::spawnerCategory catig : spawner::spawnerObjectsDatabase) {
 //                for (spawner::LoadedSpawnableObject object : catig.objects) {
 //                    if (object.objectName == "brick_metal") {
 //                        currentSpawngunObject = object;

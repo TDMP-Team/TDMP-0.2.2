@@ -14,6 +14,8 @@
 #include "threadedCamera.h"
 #include "TDObjects.h"
 
+#include <algorithm>
+
 #define rndLvl 16
 
 namespace threadCamera {
@@ -33,7 +35,7 @@ namespace threadCamera {
 	}
 
 	float randFloat(float min, float max) {
-		return min + static_cast <float> (rand()) / (static_cast <float> (RAND_MAX / (max - min)));
+		return min + static_cast <float> (rand()) / (static_cast <float> (float(RAND_MAX) / (max - min)));
 	}
 
 	void drawCameraWndw(KMCamera* camera) {
@@ -65,20 +67,18 @@ namespace threadCamera {
 	}
 
 	KMCamera::KMCamera(glm::quat rot, glm::vec3 pos, glm::vec3 forwv, glm::vec3 upv, int resX, int resY) {
-		this->cameraActive = false;
+		cameraActive = false;
 
 		glGenTextures(1, (GLuint*)camTexture);
 		resolutionX = resX;
 		resolutionY = resY;
 
-		bufferA = new pixel[resolutionX * resolutionY];
-		bufferB = new pixel[resolutionX * resolutionY];
-		bufferShow = bufferA;
-		bufferWrite = bufferB;
-		bufferDistances = new float[resolutionX * resolutionY];
-
-		FillMemory(bufferA, (resolutionX * resolutionY) * 4, 0x00);
-		FillMemory(bufferB, (resolutionX * resolutionY) * 4, 0x00);
+        bufferShow.resize(resolutionX * resolutionY);
+        std::fill(bufferShow.begin(), bufferShow.end(), pixel{0,0,0,0});
+        bufferWrite.resize(resolutionX * resolutionY);
+        std::fill(bufferWrite.begin(), bufferWrite.end(), pixel{0,0,0,0});
+        bufferDistances.resize(resolutionX * resolutionY);
+        std::fill(bufferDistances.begin(), bufferDistances.end(), 0.0f);
 
 		rotation = rot;
 		position = pos;
@@ -112,14 +112,12 @@ namespace threadCamera {
 
 		glBindTexture(GL_TEXTURE_2D, (GLuint)camTexture);
 		glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, resolutionX, resolutionY, 0, GL_RGBA, GL_UNSIGNED_BYTE, (void*)bufferShow);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, resolutionX, resolutionY, 0, GL_RGBA, GL_UNSIGNED_BYTE, (void*)bufferShow.data());
 		return camTexture;
 	}
 
 	void KMCamera::swapBuffers() {
-		pixel* tmp = bufferShow;
-		bufferShow = bufferWrite;
-		bufferWrite = tmp;
+        std::swap(bufferShow, bufferWrite);
 	}
 
 	void KMCamera::setResolution(int X, int Y) {
@@ -129,8 +127,8 @@ namespace threadCamera {
 	}
 
 	std::chrono::high_resolution_clock execTimer;
-	std::chrono::steady_clock::time_point FRAMESTART;
-	std::chrono::steady_clock::time_point FRAMEEND;
+	std::chrono::high_resolution_clock::time_point FRAMESTART;
+	std::chrono::high_resolution_clock::time_point FRAMEEND;
 
 	float KMCamera::getLastFrameTime() {
 		return lastFrameExecTime;
@@ -163,16 +161,8 @@ namespace threadCamera {
 			resolutionY = nextResolutionX;
 			bufferUpdateNeeded = false;
 
-			delete(bufferA);
-			delete(bufferB);
-			bufferA = new pixel[resolutionX * resolutionY];
-			bufferB = new pixel[resolutionX * resolutionY];
-			bufferShow = bufferA;
-			bufferWrite = bufferB;
-			bufferDistances = new float[resolutionX * resolutionY];
-
-			FillMemory(bufferA, (resolutionX * resolutionY) * 4, 0x00);
-			FillMemory(bufferB, (resolutionX * resolutionY) * 4, 0x00);
+            std::fill(bufferShow.begin(), bufferShow.end(), pixel{0,0,0,0});
+            std::fill(bufferWrite.begin(), bufferWrite.end(), pixel{0,0,0,0});
 		}
 
 		if (cameraDestroyed) {
@@ -206,7 +196,7 @@ namespace threadCamera {
 		invViewMat = glm::inverse(vmatrix);
 
 		float frameMaxDist = 0;
-		float frameMinDist = INT32_MAX;
+		float frameMinDist = std::numeric_limits<float>::max();
 
 		for (int y = 0; y < resolutionY; y++) {
 			for (int x = resolutionX; x > 0; x--) {
