@@ -43,7 +43,7 @@ void TDMP::Player::SetRotation(td::Vec4 rot)
 
 void TDMP::Player::CreateBodyIfNotExists()
 {
-	if (body.body != 0x00)
+	if (body.body != 0x00 || glb::game->State != gameState::ingame)
 		return;
 
 	Debug::print("Creating player's body", Env::Client);
@@ -56,6 +56,14 @@ void TDMP::Player::CreateBodyIfNotExists()
 	// TODO: Make player's body not collidable
 
 	body = spawner::placeFreeObject("KM_Vox\\Default\\ptest\\object.vox", params);
+}
+
+void TDMP::Player::RemoveBodyIfExists()
+{
+	if (body.body == 0x00 || glb::game->State != gameState::ingame)
+		return;
+
+	body.body->Destroy(body.body, true);
 }
 
 bool TDMP::Player::IsMe()

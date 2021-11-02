@@ -120,6 +120,7 @@ void TDMP::Client::Tick()
 	finalRot.z = rot.z;
 	finalRot.w = rot.w;
 
+	// TODO: Get rid of first argument since server validates steamid by itself
 	msg.SetPlayer(SteamUser()->GetSteamID(), glb::player->position, finalRot);
 
 	client->SendData(&msg, sizeof(msg), k_nSteamNetworkingSend_Unreliable);
@@ -127,6 +128,15 @@ void TDMP::Client::Tick()
 
 void TDMP::Client::Frame()
 {
+	// Should be true when we was on the server and on the map and returned to the main menu
+	if (glb::game->State != gameState::ingame && TDMP::LevelLoaded && serverHandle != k_HSteamNetConnection_Invalid)
+	{
+		Debug::print("Disconnecting from the server", Env::Client);
+
+		Disconnect();
+
+		return;
+	}
 
 	if (serverHandle == k_HSteamNetConnection_Invalid || glb::game->State != gameState::ingame || !TDMP::LevelLoaded)
 		return;
@@ -168,8 +178,13 @@ void TDMP::Client::Connect(uint64 serverID, uint32 serverIP)
 
 void TDMP::Client::Disconnect()
 {
-	if (serverHandle == k_HSteamNetConnection_Invalid)
+	if (serverHandle == k_HSteamNetConnection_Invalid || TDMP::IsServer())
+	{
+		connectionState = k_EClientNotConnected;
+		serverHandle = k_HSteamNetConnection_Invalid;
+
 		return;
+	}
 
 	SteamNetworkingSockets()->CloseConnection(serverHandle, 0, nullptr, false);
 	connectionState = k_EClientNotConnected;
@@ -299,7 +314,7 @@ void TDMP::Client::HandleData(EMessage eMsg, SteamNetworkingMessage_t* message)
 
 				break;
 			}
-			else if (!players[i].Active && found == -1) // So point is if we haven't found player at all, then we won't go through player array again, to find empty slot to create new player class
+			else if (!players[i].Active) // So point is if we haven't found player at all, then we won't go through player array again, to find empty slot to create new player class
 			{
 				found = i;
 
@@ -315,6 +330,30 @@ void TDMP::Client::HandleData(EMessage eMsg, SteamNetworkingMessage_t* message)
 			players[found].Rotation = pMsg->GetRotation();
 
 			players[found].Active = true;
+		}
+
+		break;
+	}
+	case k_EMsgClientExiting:
+	{
+		MsgClientExiting* pMsg = (MsgClientExiting*)message->GetData();
+		if (pMsg == nullptr)
+		{
+			Debug::print("corrupted k_EMsgClientExiting received");
+			break;
+		}
+
+		for (uint32 i = 0; i < MaxPlayers; ++i)
+		{
+			if (players[i].Active && players[i].SteamId == pMsg->GetSteamID())
+			{
+				Debug::print("Player " + std::to_string(players[i].SteamId.ConvertToUint64()) + " disconnected", Env::Client);
+
+				players[i].RemoveBodyIfExists();
+				players[i].Active = false;
+
+				break;
+			}
 		}
 
 		break;

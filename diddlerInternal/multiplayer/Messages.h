@@ -28,6 +28,7 @@ enum EMessage
 	k_EMsgServerPingResponse = k_EMsgServerBegin + 7,
 	k_EMsgServerAuthed = k_EMsgServerBegin + 8,
 	k_EMsgClientBeginAuthentication = k_EMsgServerBegin + 9,
+	k_EMsgClientExiting = k_EMsgServerBegin + 10,
 
 	// Player data
 	k_EMsgPlayerTransform = k_EMsgServerBegin + 20,
@@ -221,6 +222,25 @@ struct MsgServerExiting
 	DWORD GetMessageType() { return LittleDWord(m_dwMessageType); }
 private:
 	const DWORD m_dwMessageType;
+};
+
+struct MsgClientExiting
+{
+	MsgClientExiting() : m_dwMessageType(LittleDWord(k_EMsgClientExiting)) {}
+	DWORD GetMessageType() { return LittleDWord(m_dwMessageType); }
+
+	/// <summary>
+	/// Sets the player who disconnected. Doesn't makes any sense on clientside
+	/// </summary>
+	void SetPlayer(CSteamID steamid)
+	{
+		id = LittleQWord(steamid.ConvertToUint64());
+	}
+
+	const uint64& GetSteamID() const { return LittleQWord(id); }
+private:
+	const DWORD m_dwMessageType;
+	uint64 id;
 };
 
 struct MsgServerAuthed

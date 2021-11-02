@@ -29,6 +29,8 @@ namespace TDMP
 
 		void CreateBodyIfNotExists();
 
+		void RemoveBodyIfExists();
+
 		bool IsMe();
 	};
 

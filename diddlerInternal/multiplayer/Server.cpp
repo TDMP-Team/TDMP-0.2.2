@@ -117,7 +117,7 @@ void TDMP::Server::Tick()
 
 	ReceiveNetData();
 
-	if (!TDMP::LevelLoaded)
+	if (glb::game->State != gameState::ingame || !TDMP::LevelLoaded)
 		return;
 
 	//std::vector<MsgUpdateBodies> msgs;
@@ -225,6 +225,10 @@ void TDMP::Server::ReceiveNetData()
 
 			break;
 		}
+		case k_EMsgClientExiting:
+		{
+			break;
+		}
 		case k_EMsgPlayerTransform:
 		{
 			MsgPlayerTransform* pMsg = (MsgPlayerTransform*)message->GetData();
@@ -234,8 +238,18 @@ void TDMP::Server::ReceiveNetData()
 				break;
 			}
 
-			server->BroadcastData(message->GetData(), message->GetSize(), k_nSteamNetworkingSend_Unreliable);
-			TDMP::client->HandleData(eMsg, message);
+			// I'm not sure if it's the best way of doing it
+			for (uint32 i = 0; i < MaxPlayers; ++i)
+			{
+				ClientConnectionData_t client = ClientData[i];
+				if (client.Active && client.handle == connection)
+				{
+					server->BroadcastData(message->GetData(), message->GetSize(), k_nSteamNetworkingSend_Unreliable);
+					TDMP::client->HandleData(eMsg, message);
+
+					break;
+				}
+			}
 
 			break;
 		}
@@ -315,6 +329,17 @@ void TDMP::Server::OnConnectionStatusChanged(SteamNetConnectionStatusChangedCall
 
 			if (ClientData[i].SteamIDUser == info.m_identityRemote.GetSteamID())
 			{
+				// Flush all others messages of connection
+				SteamGameServerNetworkingSockets()->FlushMessagesOnConnection(ClientData[i].handle);
+
+				Debug::print("Player " + std::to_string(ClientData[i].SteamIDUser.ConvertToUint64()) + " disconnected", Env::Server);
+
+				MsgClientExiting msg;
+				msg.SetPlayer(ClientData[i].SteamIDUser);
+
+				BroadcastData(&msg, sizeof(msg), k_nSteamNetworkingSend_Reliable);
+				SendDataToConnection(&msg, sizeof(msg), ClientData[0].handle, k_nSteamNetworkingSend_Reliable); // letting our client know that player left
+
 				SteamGameServerNetworkingSockets()->CloseConnection(ClientData[i].handle, k_ESteamNetConnectionEnd_App_Min + 1, nullptr, false);
 				memset(&ClientData[i], 0, sizeof(ClientConnectionData_t));
 			}
