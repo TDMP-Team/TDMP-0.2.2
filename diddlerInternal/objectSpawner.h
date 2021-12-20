@@ -5,7 +5,6 @@
 #include "Raycaster.h"
 #include "glm/gtc/quaternion.hpp"
 #include <vector>
-#include "snapPoints.h"
 
 inline bool exists(const std::string& name);
 
@@ -120,27 +119,25 @@ namespace spawner {
 		std::vector<objectAttribute> attributes;
 	};
 
-	struct spawnerCategory {
+	struct spawnerCatagory {
 		std::string name;
 		std::vector<LoadedSpawnableObject> objects;
 	};
 
 	void switchRotationStep(WPARAM wParam);
-	void drawSpawngunObjectOutline(TDVox* currentVox, raycaster::rayData rd, bool usingSnapPoints, glm::quat parentRotation, snapPoint point);
-	spawnedObject throwFreeObject(const std::string& filepath, const thrownObjectSpawnParams& params);
-	spawnedObject placeChildObject(const std::string& filepath, childObjectSpawnParams params = {});
-	bool spawnChildEntity(const std::string& filepath, const childObjectSpawnParams& params, spawnedObject* object);
-	spawnedObject placeFreeObject(const std::string& filepath, const freeObjectSpawnParams& params = {});
-	bool spawnFreeEntity(const std::string& filepath, const freeObjectSpawnParams& params, spawnedObject* object);
+	spawnedObject throwFreeObject(std::string filepath, thrownObjectSpawnParams params);
+	spawnedObject placeChildObject(std::string filepath, childObjectSpawnParams params = {});
+	bool spawnChildEntity(std::string filepath, childObjectSpawnParams params, spawnedObject* object);
+	spawnedObject placeFreeObject(std::string filepath, freeObjectSpawnParams params = {});
+	bool spawnFreeEntity(std::string filepath, freeObjectSpawnParams params, spawnedObject* object);
 	void deleteLastObject();
-	KMSpawnedObject spawnObjectProxy(const std::string& path, const objectSpawnerParams& params);
+	KMSpawnedObject spawnObjectProxy(std::string path, objectSpawnerParams params);
 	void processMostRecentObject();
-	std::vector<spawnerCategory> enumerateSpawnableObjects();
-	void handleSpawnerWeapon();
-	KMSpawnedObject spawnEntity(const std::string& filepath, const objectSpawnerParams& osp);
+	std::vector<spawnerCatagory> enumerateSpawnableObjects();
+	std::vector<spawnerCatagory> enumerateWireObjects();
+	KMSpawnedObject spawnEntity(std::string filepath, objectSpawnerParams osp);
 	bool updateShapeBody(TDShape* shape, TDBody* body);
 	spawnedObject placeDuplicateObject(TDVox* cloneTarget);
-	bool spawnDuplicatedObject(TDVox* cloneTarget, const freeObjectSpawnParams& params, spawnedObject* object);
-	extern std::vector<spawner::spawnerCategory> spawnerObjectsDatabase;
+	bool spawnDuplicatedObject(TDVox* cloneTarget, freeObjectSpawnParams params, spawnedObject* object);
+	extern std::vector<spawner::spawnerCatagory> spawnerObjectsDatabase;
 }
-

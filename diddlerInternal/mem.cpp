@@ -1,8 +1,9 @@
 #include "mem.h"
-#include <windows.h>
-#include <tlHelp32.h>
-#include <psapi.h>
+#include <Windows.h>
+#include <TlHelp32.h>
+#include <Psapi.h>
 #include <winternl.h>
+#include <iostream>
 
 //https://guidedhacking.com/threads/how-to-hack-any-game-first-internal-hack-dll-tutorial.12142/
 
@@ -52,20 +53,93 @@ bool mem::Compare(const BYTE* pData, const BYTE* bMask, const char* szMask)
 	return true;
 }
 
-DWORD64 mem::FindPattern(BYTE* bMask, const char* szMask, HMODULE hModule)
+bool compareExact(const BYTE* pData, const BYTE* bMask, const char* szMask)
+{
+	for (; *szMask; ++szMask, ++pData, ++bMask)
+	{
+		if (*szMask == 'x' && *pData != *bMask)
+			return false;
+	}
+	return true;
+}
+
+int countMatchingChars(const char* szMask) {
+	int cCount = 0;
+	for (; *szMask; ++szMask)
+	{
+		if (*szMask == 'x') {
+			cCount++;
+		}
+	}
+	return cCount;
+}
+
+int compareClosest(const BYTE* pData, const BYTE* bMask, const char* szMask) {
+	int cCount = 0;
+
+	for (; *szMask; ++szMask, ++pData, ++bMask)
+	{
+		if (*szMask == 'x' && *pData == *bMask) {
+			cCount++;
+		}
+	}
+
+	return cCount;
+
+	//for (; *szMask; ++szMask, ++pData, ++bMask)
+	//{
+	//	if (*szMask == 'x') {
+	//		if (*pData == *bMask) {
+	//			cCount++;
+	//		}
+	//	}
+	//	else {
+	//		return cCount;
+	//	}
+	//}
+	//return cCount;
+}
+
+DWORD64 mem::FindPattern(BYTE* bMask, const char* szMask, HMODULE hModule, float* integrity)
 {
 	MODULEINFO moduleInfo = { 0 };
 	GetModuleInformation(GetCurrentProcess(), hModule, &moduleInfo, sizeof(MODULEINFO));
 
 	DWORD64 dwBaseAddress = (DWORD64)hModule;
 	DWORD64 dwModuleSize = (DWORD64)moduleInfo.SizeOfImage;
+	
+	int matchLen = countMatchingChars(szMask);
+	int searchLen = strlen(szMask);
+	int high = searchLen / 4;
+	DWORD64 cPtr = 0;
 
-	for (DWORD64 i = 0; i < dwModuleSize; i++)
+	//attempt sigscanning using the faster exact match method
+	for (DWORD64 i = 0; i < dwModuleSize - searchLen; i++)
 	{
-		if (Compare((BYTE*)(dwBaseAddress + i), bMask, szMask))
+		if (compareExact((BYTE*)(dwBaseAddress + i), bMask, szMask)) {
+			if (integrity) { *integrity = 100.f; }
 			return (DWORD64)(dwBaseAddress + i);
+		}
 	}
-	return 0;
+
+	//if exact scanning fails, begin scanning for closest match
+	for (DWORD64 i = 0; i < dwModuleSize - searchLen; i++)
+	{
+		int c = compareClosest((BYTE*)(dwBaseAddress + i), bMask, szMask);
+		if (c > high) {
+			high = c;
+			cPtr = (DWORD64)(dwBaseAddress + i);
+		}
+
+		if (high == searchLen) {
+			if (integrity) { *integrity = ((float)high / (float)matchLen) * 100.f; }
+			return cPtr;
+		}
+	}
+
+	//return closest match, or 0 if nothing found
+	if (integrity) { *integrity = ((float)high / (float)matchLen) * 100.f; }
+	return cPtr;
 }
 
 bool mem::Hook(char* src, char* dst, int len)

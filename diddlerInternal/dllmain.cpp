@@ -20,17 +20,16 @@
 #include "Global.h"
 #include "TDFuncs.h"
 #include "hookTests.h"
-#include "Mods.h"
 #include "mainHook.h"
 #include "movementLoop.h"
 #include "focusHook.h"
-#include "noclip.h"
 #include <Psapi.h>
 #include "windows.h"
 #include "Psapi.h"
 #include "Shlwapi.h"
 #include "constClock.h"
 #include "multiplayer/Main.h"
+#include "Lua.h"
 
 #pragma comment(lib, "psapi.lib")
 
@@ -134,10 +133,13 @@ DWORD WINAPI main(HMODULE hModule)
 
     std::cout << "[I] Completed sigscanning" << std::endl;
 
+    LUA::HookRegisterGameFunctions();
+
+    std::cout << "[I] Hooked Lua" << std::endl;
+
     initTestHook();
-    initGodmodeHook();
     focusHook::initFocusHook();
-    constClock::beginConstantClock(16.6f);
+    constClock::beginConstantClock(16.6f*2);
 
     TDMP::Init();
     //initMovementHook();
@@ -145,10 +147,6 @@ DWORD WINAPI main(HMODULE hModule)
     while (true) {
         if (((GetAsyncKeyState(VK_END) >> 15) & 0x0001) == 0x0001) {
             if (true) {
-
-                if (noclip::inNoclip) {
-                    noclip::ToggleNoclip();
-                }
 
                 ////undo hooks
                 terminateSwapBuffersHook();
@@ -158,7 +156,6 @@ DWORD WINAPI main(HMODULE hModule)
                 terminateMovementHook();
                 terminateHIDsHook();
                 terminateTestHook();
-                terminateGodmodeHook();
                 focusHook::terminateFocusHook();
                 constClock::endConstantClock();
 

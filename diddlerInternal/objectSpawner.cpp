@@ -10,9 +10,7 @@
 #include "stb_image.h"
 #include "maths.h"
 #include "glm/gtc/quaternion.hpp"
-#include "toolgun.h"
 #include "glm/gtx/quaternion.hpp"
-#include "snapPoints.h"
 
 namespace fs = std::filesystem;
 
@@ -81,7 +79,7 @@ float deg2rad(float deg) {
 namespace spawner {
 
     float voxScale = 1.f;
-    std::vector<spawner::spawnerCategory> spawnerObjectsDatabase;
+    std::vector<spawner::spawnerCatagory> spawnerObjectsDatabase;
 
     //std::vector<toolgun::fadeShapeOutline> spawnedObjects = {};
     std::vector<KMSpawnedObject> spawnList = {};
@@ -253,162 +251,7 @@ namespace spawner {
         return { 0.f, 0.f, ZOffset };
     }
 
-    void drawSpawngunObjectOutline(TDVox* currentVox, raycaster::rayData rd, bool usingSnapPoints, glm::quat parentRotation, snapPoint point) {
-
-        glm::vec3 clippingOffset = math::v3_td2glm(getClippingTranslation(currentVox, rd, true));
-
-
-        td::Vec3 target = rd.worldPos;
-
-        td::Color boxColour = { 1.f, 1.f, 1.f, 1.f };
-
-        if (trunc(1000. * spawner::voxScale) != trunc(1000. * 1.f)) {
-            boxColour = { 1.f, 0.55f, 0.f, 1.f };
-        }
-
-        float voxSizeX = (currentVox->sizeX / 10.f) * spawner::voxScale;
-        float voxSizeY = (currentVox->sizeY / 10.f) * spawner::voxScale;
-        float voxSizeZ = (currentVox->sizeZ / 10.f) * spawner::voxScale;
-
-        td::Vec3 oSize = { voxSizeX, voxSizeY, voxSizeZ };
-        glm::vec3 targetGLM = math::v3_td2glm(target);
-
-        glm::quat facePlayer = glm::quat(glm::vec3(4.71238898025f, glb::player->camYaw /* + (deg2rad(objectPlacementRotationSteps[currentRotationStep]))*/, 0));
-        glm::vec3 vxTmp = facePlayer * glm::vec3(-1, 0, 0);
-
-        glm::vec3 hitDir = glm::vec3(rd.angle.x, rd.angle.y, rd.angle.z);
-
-        hitDir = glm::normalize(hitDir);
-
-        glm::quat q = glm::conjugate(glm::quat(glm::lookAt(targetGLM, targetGLM + hitDir, vxTmp))); //this is kinda inverted, with "up" facing the player and "forward" facing away from the surface. "fixing" this makes it work less good so eh.
-        glm::quat q_flat = q;
-
-        glm::quat rotOffset = glm::quat(glm::vec3(-(deg2rad(objectPlacementRotationSteps_V[currentRotationStep_V2])), -(deg2rad(objectPlacementRotationSteps_V[currentRotationStep_V1])), -(deg2rad(objectPlacementRotationSteps_H[currentRotationStep_H]))));
-        q = q * rotOffset;
-
-        if (usingSnapPoints) {
-            q = parentRotation;
-            q_flat = q;
-            target = math::v3_glm2td(point.position + (point.direction * (voxSizeX * 0.5f)));
-        }
-
-        glm::vec3 vx = q * glm::vec3(-1, 0, 0);
-        glm::vec3 vy = q * glm::vec3(0, -1, 0);
-        glm::vec3 vz = q * glm::vec3(0, 0, -1); //(UP)
-
-        glm::vec3 vx_f = q_flat * glm::vec3(1, 0, 0);
-        glm::vec3 vy_f = q_flat * glm::vec3(0, 1, 0);
-        glm::vec3 vz_f = q_flat * glm::vec3(0, 0, 1); //(UP)
-
-        glm::vec3 clippingTranslation = (vz_f * clippingOffset.z) + (vy_f * clippingOffset.y) + (vx_f * clippingOffset.x);
-
-        //translations and localisations for the bounding box
-        glm::vec3 translationFBL = ((vz * (voxSizeZ * 0.5f)) + (vy * (voxSizeY * 0.5f)) + (vx * (voxSizeX * 0.5f)));
-        translationFBL += clippingTranslation;
-
-        glm::vec3 translationBBR = ((vz * (voxSizeZ * 0.5f)) - (vy * (voxSizeY * 0.5f)) - (vx * (voxSizeX * 0.5f)));
-        translationBBR += clippingTranslation;
-
-        glm::vec3 translationBBL = ((vz * (voxSizeZ * 0.5f)) - (vy * (voxSizeY * 0.5f)) + (vx * (voxSizeX * 0.5f)));
-        translationBBL += clippingTranslation;
-
-        glm::vec3 translationFBR = ((vz * (voxSizeZ * 0.5f)) + (vy * (voxSizeY * 0.5f)) - (vx * (voxSizeX * 0.5f)));
-        translationFBR += clippingTranslation;
-
-        glm::vec3 translationFTL = ((vz * (voxSizeZ * -0.5f)) + (vy * (voxSizeY * 0.5f)) + (vx * (voxSizeX * 0.5f)));
-        translationFTL += clippingTranslation;
-
-        glm::vec3 translationBTR = ((vz * (voxSizeZ * -0.5f)) - (vy * (voxSizeY * 0.5f)) - (vx * (voxSizeX * 0.5f)));
-        translationBTR += clippingTranslation;
-
-        glm::vec3 translationBTL = ((vz * (voxSizeZ * -0.5f)) - (vy * (voxSizeY * 0.5f)) + (vx * (voxSizeX * 0.5f)));
-        translationBTL += clippingTranslation;
-
-        glm::vec3 translationFTR = ((vz * (voxSizeZ * -0.5f)) + (vy * (voxSizeY * 0.5f)) - (vx * (voxSizeX * 0.5f)));
-        translationFTR += clippingTranslation;
-
-        //translations and localisations for the indicator boxes
-
-        //red front box
-        glm::vec3 translationFTRI_IF = ((vz * (voxSizeZ * 0.4f)) + (vy * (voxSizeY * 0.4f)) - (vx * (voxSizeX * 0.5f)));
-        translationFTRI_IF += clippingTranslation;
-
-        glm::vec3 translationFBRI_IF = ((vz * (voxSizeZ * -0.4f)) + (vy * (voxSizeY * 0.4f)) - (vx * (voxSizeX * 0.5f)));
-        translationFBRI_IF += clippingTranslation;
-
-        glm::vec3 translationBTRI_IF = ((vz * (voxSizeZ * 0.4f)) - (vy * (voxSizeY * 0.4f)) - (vx * (voxSizeX * 0.5f)));
-        translationBTRI_IF += clippingTranslation;
-
-        glm::vec3 translationBBRI_IF = ((vz * (voxSizeZ * -0.4f)) - (vy * (voxSizeY * 0.4f)) - (vx * (voxSizeX * 0.5f)));
-        translationBBRI_IF += clippingTranslation;
-
-        //blue top box
-        glm::vec3 translationFTRI_IT = ((vz * (voxSizeZ * -0.5f)) + (vy * (voxSizeY * 0.3f)) - (vx * (voxSizeX * 0.3f)));
-        translationFTRI_IT += clippingTranslation;
-
-        glm::vec3 translationBTRI_IT = ((vz * (voxSizeZ * -0.5f)) - (vy * (voxSizeY * 0.3f)) - (vx * (voxSizeX * 0.3f)));
-        translationBTRI_IT += clippingTranslation;
-
-        glm::vec3 translationFTLI_IT = ((vz * (voxSizeZ * -0.5f)) + (vy * (voxSizeY * 0.3f)) + (vx * (voxSizeX * 0.3f)));
-        translationFTLI_IT += clippingTranslation;
-
-        glm::vec3 translationBTLI_IT = ((vz * (voxSizeZ * -0.5f)) - (vy * (voxSizeY * 0.3f)) + (vx * (voxSizeX * 0.3f)));
-        translationBTLI_IT += clippingTranslation;
-
-        td::Vec3 FBL = { target.x - translationFBL.x, target.y - translationFBL.y, target.z - translationFBL.z };
-        td::Vec3 BBR = { target.x - translationBBR.x, target.y - translationBBR.y, target.z - translationBBR.z };
-        td::Vec3 BBL = { target.x - translationBBL.x, target.y - translationBBL.y, target.z - translationBBL.z };
-        td::Vec3 FBR = { target.x - translationFBR.x, target.y - translationFBR.y, target.z - translationFBR.z };
-
-        td::Vec3 FTL = { target.x - translationFTL.x, target.y - translationFTL.y, target.z - translationFTL.z };
-        td::Vec3 BTR = { target.x - translationBTR.x, target.y - translationBTR.y, target.z - translationBTR.z };
-        td::Vec3 BTL = { target.x - translationBTL.x, target.y - translationBTL.y, target.z - translationBTL.z };
-        td::Vec3 FTR = { target.x - translationFTR.x, target.y - translationFTR.y, target.z - translationFTR.z };
-
-        td::Vec3 FTRI_IF = { target.x - translationFTRI_IF.x, target.y - translationFTRI_IF.y, target.z - translationFTRI_IF.z };
-        td::Vec3 FBRI_IF = { target.x - translationFBRI_IF.x, target.y - translationFBRI_IF.y, target.z - translationFBRI_IF.z };
-        td::Vec3 BTRI_IF = { target.x - translationBTRI_IF.x, target.y - translationBTRI_IF.y, target.z - translationBTRI_IF.z };
-        td::Vec3 BBRI_IF = { target.x - translationBBRI_IF.x, target.y - translationBBRI_IF.y, target.z - translationBBRI_IF.z };
-
-        td::Vec3 FTRI_IT = { target.x - translationFTRI_IT.x, target.y - translationFTRI_IT.y, target.z - translationFTRI_IT.z };
-        td::Vec3 BTRI_IT = { target.x - translationBTRI_IT.x, target.y - translationBTRI_IT.y, target.z - translationBTRI_IT.z };
-        td::Vec3 FTLI_IT = { target.x - translationFTLI_IT.x, target.y - translationFTLI_IT.y, target.z - translationFTLI_IT.z };
-        td::Vec3 BTLI_IT = { target.x - translationBTLI_IT.x, target.y - translationBTLI_IT.y, target.z - translationBTLI_IT.z };
-        //td::Vec3 frontcenter = { target.x - translationCEN.x, target.y - translationCEN.y, target.z - translationCEN.z };
-
-        //bottom square
-        glb::oFDL(glb::renderer, FBL, FBR, boxColour, boxColour, false);
-        glb::oFDL(glb::renderer, FBL, BBL, boxColour, boxColour, false);
-        glb::oFDL(glb::renderer, BBL, BBR, boxColour, boxColour, false);
-        glb::oFDL(glb::renderer, BBR, FBR, boxColour, boxColour, false);
-
-        //top square
-        glb::oFDL(glb::renderer, FTL, FTR, boxColour, boxColour, false);
-        glb::oFDL(glb::renderer, FTL, BTL, boxColour, boxColour, false);
-        glb::oFDL(glb::renderer, BTL, BTR, boxColour, boxColour, false);
-        glb::oFDL(glb::renderer, BTR, FTR, boxColour, boxColour, false);
-
-        //walls
-        glb::oFDL(glb::renderer, FTL, FBL, boxColour, boxColour, false);
-        glb::oFDL(glb::renderer, FTR, FBR, boxColour, boxColour, false);
-        glb::oFDL(glb::renderer, BTL, BBL, boxColour, boxColour, false);
-        glb::oFDL(glb::renderer, BTR, BBR, boxColour, boxColour, false);
-
-        //front indicator
-        glb::oFDL(glb::renderer, FTRI_IF, BTRI_IF, red, red, false);
-        glb::oFDL(glb::renderer, FBRI_IF, BBRI_IF, red, red, false);
-        glb::oFDL(glb::renderer, FBRI_IF, FTRI_IF, red, red, false);
-        glb::oFDL(glb::renderer, BBRI_IF, BTRI_IF, red, red, false);
-
-        //top indicator
-        glb::oFDL(glb::renderer, FTRI_IT, BTRI_IT, blue, blue, false);
-        glb::oFDL(glb::renderer, FTLI_IT, BTLI_IT, blue, blue, false);
-        glb::oFDL(glb::renderer, FTRI_IT, FTLI_IT, blue, blue, false);
-        glb::oFDL(glb::renderer, BTRI_IT, BTLI_IT, blue, blue, false);
-    }
-
-  
-    KMSpawnedObject spawnObjectProxy(const std::string& path, const objectSpawnerParams& params) {
+    KMSpawnedObject spawnObjectProxy(std::string path, objectSpawnerParams params) {
         KMSpawnedObject lsp = spawnEntity(path, params);
         lastSpawnedObject = lsp;
         lastSpawnedObject.params = params;
@@ -603,8 +446,8 @@ namespace spawner {
         return processed;
     }
 
-    std::vector<spawnerCategory> enumerateSpawnableObjects() {
-        std::vector<spawnerCategory> returnObj = {};
+    std::vector<spawnerCatagory> enumerateSpawnableObjects() {
+        std::vector<spawnerCatagory> returnObj = {};
         for (const auto& file : fs::directory_iterator("KM_Vox"))
         {
             int voxCount = 0;
@@ -612,7 +455,7 @@ namespace spawner {
             // /\ iterate over each folder within [KM_Vox]
             std::string path = file.path().string();
             std::string catig = path.substr(7, path.size() - 7);
-            spawnerCategory current;
+            spawnerCatagory current;
             current.name = catig;
 
             for (const auto& catagoryFolder : fs::directory_iterator(file.path()))
@@ -674,6 +517,71 @@ namespace spawner {
         return returnObj;
     }
 
+    std::vector<spawnerCatagory> enumerateWireObjects() {
+        std::vector<spawnerCatagory> returnObj = {};
+        for (const auto& file : fs::directory_iterator("KM_Misc\\KM_Wire"))
+        {
+            int voxCount = 0;
+
+            // /\ iterate over each folder within [KM_Vox]
+            std::string path = file.path().string();
+            std::string catig = path.substr(7, path.size() - 7);
+            spawnerCatagory current;
+            current.name = catig;
+
+            bool foundVox = false;
+            bool foundImage = false;
+            for (const auto& catagoryFolder : fs::directory_iterator(file.path()))
+            {
+
+                // /\ iterate over each subfolder within [VOX / CATIG]
+                char* currentVoxPath;
+                char* currentImagePath;
+
+                if (strcmp(catagoryFolder.path().filename().string().c_str(), "object.vox") == 0)
+                {
+                    foundVox = true;
+                }
+                if (strcmp(catagoryFolder.path().filename().string().c_str(), "object.png") == 0)
+                {
+                    foundImage = true;
+                }
+
+                //std::cout << foundVox << " : " << foundImage << std::endl;
+                if (foundVox && foundImage) {
+                    LoadedSpawnableObject lso{};
+                    lso.catagory = catig;
+                    lso.basePath = catagoryFolder.path().string();
+                    lso.imagePath = lso.basePath + "\\object.png";
+                    lso.voxPath = lso.basePath + "\\object.vox";
+
+                    //std::cout << lso.basePath.c_str() << std::endl;
+
+                    td::small_string ssVoxPath = td::small_string(lso.voxPath.c_str());
+                    td::small_string ssSubPath = td::small_string("");
+
+
+
+
+                    lso.voxObject = (TDVox*)glb::oSpawnVox(&ssVoxPath, &ssSubPath, 1.f);
+
+                    lso.objectName = getObjectName(lso.basePath);
+
+
+                    int imgSize = 255;
+                    LoadTextureFromFile(lso.imagePath.c_str(), &lso.imageTexture, &imgSize, &imgSize);
+                    voxCount++;
+                    current.objects.push_back(lso);
+                }
+            }
+
+            std::cout << "[I] Loaded " << std::to_string(voxCount) << " wire objects from: " << catig << std::endl;
+
+            returnObj.push_back(current);
+        }
+        return returnObj;
+    }
+
     void deleteLastObject() {
         if (glb::game->State == gameState::ingame) {
             if (spawnList.size() > 0) {
@@ -685,7 +593,7 @@ namespace spawner {
     }
 
     //drops an object infront of the player
-    spawnedObject throwFreeObject(const std::string& filepath, const thrownObjectSpawnParams& params) {
+    spawnedObject throwFreeObject(std::string filepath, thrownObjectSpawnParams params) {
         spawnedObject object = {};
         freeObjectSpawnParams parsedParams = {};
         parsedParams.attributes = params.attributes;
@@ -763,7 +671,7 @@ namespace spawner {
 
         return object;
     }
-    bool spawnDuplicatedObject(TDVox* cloneTarget, const freeObjectSpawnParams& params, spawnedObject* object) {
+    bool spawnDuplicatedObject(TDVox* cloneTarget, freeObjectSpawnParams params, spawnedObject* object) {
         if (!cloneTarget) {
             return false;
         }
@@ -791,7 +699,8 @@ namespace spawner {
         std::cout << "PHY: " << ((TDVox*)VOX)->PhysicsBuffer << std::endl;
         std::cout << "MAT: " << ((TDVox*)VOX)->MaterialBuffer << std::endl;
 
-        SHAPE->pVox = (TDVox*)VOX;
+        //SHAPE->pVox = (TDVox*)VOX;
+        *(uintptr_t*)((uintptr_t)SHAPE + 152) = VOX;
 
         object->shapes.push_back(SHAPE);
         object->voxes.push_back((TDVox*)VOX);
@@ -801,7 +710,7 @@ namespace spawner {
         }
 
         ((TDShape*)SHAPE)->Texture = 3;
-        ((TDShape*)SHAPE)->TextureIntensity = 1.f;
+        //((TDShape*)SHAPE)->TextureIntensity = 1.f;
 
         object->body = BODY;
         glb::oUpdateShapes(uBODY);
@@ -810,7 +719,7 @@ namespace spawner {
     }
 
     //spawns a free object wherever the player is looking
-    spawnedObject placeFreeObject(const std::string& filepath, const freeObjectSpawnParams& params) {
+    spawnedObject placeFreeObject(std::string filepath, freeObjectSpawnParams params) {
         raycaster::rayData rd = raycaster::castRayPlayer();
 
         spawnedObject object = {};
@@ -856,11 +765,13 @@ namespace spawner {
 
         if (params.useSnaps) {
             object.body->Position = { params.snapPosition.x - translation.x, params.snapPosition.y - translation.y, params.snapPosition.z - translation.z };
-            *(glm::quat*)&object.body->Rotation = math::expandRotation(math::q_td2glm(rd.hitShape->getParentBody()->Rotation), math::q_td2glm(rd.hitShape->rOffset));
+            printf_s("Position: X: %0.2f, Y: %0.2f, Z: %0.2f\n", object.body->Position.x, object.body->Position.y, object.body->Position.z);
+            //*(glm::quat*)&object.body->Rotation = math::expandRotation(math::q_td2glm(rd.hitShape->getParentBody()->Rotation), math::q_td2glm(rd.hitShape->rOffset));
             *(glm::quat*)&object.body->Rotation = q;
         }
         else {
             object.body->Position = { rd.worldPos.x - translation.x, (rd.worldPos.y - translation.y), rd.worldPos.z - translation.z };
+            printf_s("Position: X: %0.2f, Y: %0.2f, Z: %0.2f\n", object.body->Position.x, object.body->Position.y, object.body->Position.z);
             *(glm::quat*)&object.body->Rotation = q;
         }
 
@@ -877,7 +788,7 @@ namespace spawner {
 
         return object;
     }
-    bool spawnFreeEntity(const std::string& filepath, const freeObjectSpawnParams& params, spawnedObject* object) {
+    bool spawnFreeEntity(std::string filepath, freeObjectSpawnParams params, spawnedObject* object) {
         if (!exists(filepath)) {
             std::cout << "[E] no file" << std::endl;
             return false;
@@ -911,7 +822,8 @@ namespace spawner {
             glb::oCreateTexture(VOX);
             glb::oCreatePhysics(VOX);
 
-            SHAPE->pVox = (TDVox*)VOX;
+            //SHAPE->pVox = (TDVox*)VOX;
+            *(uintptr_t*)((uintptr_t)SHAPE + 152) = VOX;
 
             std::cout << "Shape: 0x" << std::hex << SHAPE << std::endl;
             std::cout << "Vox:   0x" << std::hex << (TDVox*)VOX << std::endl;
@@ -924,7 +836,7 @@ namespace spawner {
             }
 
             ((TDShape*)SHAPE)->Texture = 3;
-            ((TDShape*)SHAPE)->TextureIntensity = 1.f;
+            //((TDShape*)SHAPE)->TextureIntensity = 1.f;
         }
 
         object->body = BODY;
@@ -933,7 +845,7 @@ namespace spawner {
         return true;
     }
 
-    spawnedObject placeChildObject(const std::string& filepath, childObjectSpawnParams params) {
+    spawnedObject placeChildObject(std::string filepath, childObjectSpawnParams params) {
         raycaster::rayData rd = raycaster::castRayPlayer();
 
         spawnedObject object = {};
@@ -1001,7 +913,7 @@ namespace spawner {
         return object;
     }
 
-    bool spawnChildEntity(const std::string& filepath, const childObjectSpawnParams& params, spawnedObject* object) {
+    bool spawnChildEntity(std::string filepath, childObjectSpawnParams params, spawnedObject* object) {
         if (!exists(filepath)) {
             std::cout << "[E] no file" << std::endl;
             return false;
@@ -1027,7 +939,8 @@ namespace spawner {
             glb::oCreateTexture(VOX);
             glb::oCreatePhysics(VOX);
 
-            SHAPE->pVox = (TDVox*)VOX;
+            //SHAPE->pVox = (TDVox*)VOX;
+            *(uintptr_t*)((uintptr_t)SHAPE + 152) = VOX;
 
             object->shapes.push_back(SHAPE);
             object->voxes.push_back((TDVox*)VOX);
@@ -1040,7 +953,7 @@ namespace spawner {
             }
 
             ((TDShape*)SHAPE)->Texture = 3;
-            ((TDShape*)SHAPE)->TextureIntensity = 1.f;
+            //((TDShape*)SHAPE)->TextureIntensity = 1.f;
         }
 
         object->body = params.parentBody;
@@ -1050,7 +963,7 @@ namespace spawner {
         return true;
     }
 
-    KMSpawnedObject spawnEntity(const std::string& filepath, const objectSpawnerParams& osp) {
+    KMSpawnedObject spawnEntity(std::string filepath, objectSpawnerParams osp) {
         if (!exists(filepath)) {
             std::cout << "[E] no file" << std::endl;
             return { defaultParams, false, 0, 0 };
@@ -1124,7 +1037,7 @@ namespace spawner {
         }
 
         ((TDShape*)SHAPE)->Texture = 3;
-        ((TDShape*)SHAPE)->TextureIntensity = 1.f;
+        //((TDShape*)SHAPE)->TextureIntensity = 1.f;
 
         glb::oUpdateShapes((uintptr_t)BODY);
         glb::tdUpdateFunc((TDBody*)BODY, 0, 1);
@@ -1140,4 +1053,3 @@ namespace spawner {
     }
 
 }
-

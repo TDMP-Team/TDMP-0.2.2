@@ -120,6 +120,20 @@ void TDMP::Server::Tick()
 	if (glb::game->State != gameState::ingame || !TDMP::LevelLoaded)
 		return;
 
+	// TODO: Send to clients all currently driving vehicles, for making vehicles which controlled by Lua be synced too
+	/*for (size_t i = 0; i < glb::scene->m_Vehicles->size(); i++)
+	{
+		TDVehicle* v = glb::scene->m_Vehicles->data()[i];
+
+		if (v != 0)
+		{
+			v->m_RemoteDrive = true;
+			v->m_RemoteThrottle = 1;
+			v->m_RemoteSteering = 1;
+			v->m_RemoteHandbrake = false;
+		}
+	}*/
+
 	//std::vector<MsgUpdateBodies> msgs;
 	//std::vector<MsgBody> bodies;
 	for (size_t i = 0; i < TDMP::levelBodies.size(); i++)
@@ -231,7 +245,7 @@ void TDMP::Server::ReceiveNetData()
 		}
 		case k_EMsgPlayerTransform:
 		{
-			MsgPlayerTransform* pMsg = (MsgPlayerTransform*)message->GetData();
+			MsgPlayerData* pMsg = (MsgPlayerData*)message->GetData();
 			if (pMsg == nullptr)
 			{
 				Debug::print("corrupted k_EMsgPlayerTransform received");
@@ -244,8 +258,14 @@ void TDMP::Server::ReceiveNetData()
 				ClientConnectionData_t client = ClientData[i];
 				if (client.Active && client.handle == connection)
 				{
-					server->BroadcastData(message->GetData(), message->GetSize(), k_nSteamNetworkingSend_Unreliable);
-					TDMP::client->HandleData(eMsg, message);
+					// Here we're setting steamid of client which sent to us information about him. We can also make it here sending position from server's side (Like if we were simulating player movement on serverside),
+					// but this mod would be used by friends so we don't really need to use anti-exploit things here?
+
+					MsgPlayerData msg;
+					msg.SetPlayer(client.SteamIDUser, pMsg->GetPosition(), pMsg->GetRotation(), pMsg->GetVehicle());
+
+					server->BroadcastData(&msg, sizeof(msg), k_nSteamNetworkingSend_Unreliable);
+					TDMP::client->HandlePlayerData(&msg);
 
 					break;
 				}

@@ -99,6 +99,17 @@ void TDMP::Client::SendData(const void* pData, uint32 nSizeOfData, int nSendFlag
 	}
 }
 
+void TDMP::Client::LuaTick()
+{
+	for (uint32 i = 0; i < MaxPlayers; ++i)
+	{
+		if (players[i].Active)
+		{
+			players[i].LuaTick();
+		}
+	}
+}
+
 void TDMP::Client::Tick()
 {
 	SteamNetworkingSockets()->RunCallbacks();
@@ -110,7 +121,7 @@ void TDMP::Client::Tick()
 
 	// Player's transform sync
 
-	MsgPlayerTransform msg;
+	MsgPlayerData msg;
 
 	glm::quat rot(glm::vec3(0, -glb::player->camYaw + 270, -1.57f));
 	td::Vec4 finalRot;
@@ -120,8 +131,7 @@ void TDMP::Client::Tick()
 	finalRot.z = rot.z;
 	finalRot.w = rot.w;
 
-	// TODO: Get rid of first argument since server validates steamid by itself
-	msg.SetPlayer(SteamUser()->GetSteamID(), glb::player->position, finalRot);
+	msg.SetPlayer(glb::player->position, finalRot);
 
 	client->SendData(&msg, sizeof(msg), k_nSteamNetworkingSend_Unreliable);
 }
@@ -145,11 +155,7 @@ void TDMP::Client::Frame()
 	{
 		if (players[i].Active)
 		{
-			drawCube(players[i].Position, 1, td::redColor);
-
-			// Explain: "Set" functions applies last received transform data to the player and his body object. So it won't fall down if there is a latency or something else, and also won't jitter because of the physics
-			players[i].SetPosition(players[i].Position);
-			players[i].SetRotation(players[i].Rotation);
+			players[i].Frame();
 		}
 	}
 }
@@ -191,6 +197,60 @@ void TDMP::Client::Disconnect()
 	serverHandle = k_HSteamNetConnection_Invalid;
 }
 
+void TDMP::Client::HandlePlayerData(MsgPlayerData* pData)
+{
+	int found = -1;
+	for (uint32 i = 0; i < MaxPlayers; ++i)
+	{
+		if (players[i].Active && players[i].SteamId == pData->GetSteamID())
+		{
+			players[i].Position = pData->GetPosition();
+			players[i].Rotation = pData->GetRotation();
+
+			// welocme to the shit code?
+			MsgVehicle v = pData->GetVehicle();
+			if (v.id != 0) // Player is driving a vehicle
+			{
+				for (size_t j = 0; i < glb::scene->m_Vehicles->size(); j++)
+				{
+					TDVehicle* veh = glb::scene->m_Vehicles->data()[j];
+
+					if (veh == 0 || veh->Id != v.id)
+						continue;
+
+					players[i].currentVehicle = veh;
+					players[i].vehicleInput = v;
+
+					break;
+				}
+			}
+			else if (players[i].currentVehicle != 0) // player isn't driving a vehicle but he was driving one of them
+			{
+				players[i].currentVehicle = nullptr;
+			}
+
+			break;
+		}
+		else if (!players[i].Active) // So point is if we haven't found player at all, then we won't go through player array again, to find empty slot to create new player class
+		{
+			found = i;
+
+			break;
+		}
+	}
+
+	if (found != -1)
+	{
+		players[found].SteamId = pData->GetSteamID();
+
+		players[found].Position = pData->GetPosition();
+		players[found].Rotation = pData->GetRotation();
+
+		players[found].Active = true;
+	}
+
+}
+
 void TDMP::Client::HandleData(EMessage eMsg, SteamNetworkingMessage_t* message)
 {
 	uint32 cubMsgSize = message->GetSize();
@@ -223,7 +283,7 @@ void TDMP::Client::HandleData(EMessage eMsg, SteamNetworkingMessage_t* message)
 
 		break;
 	}
-	case k_EMsgServerUpdateWorld: // This is made for sending more than one body in one packet. Isn't finished yet
+	case k_EMsgServerUpdateWorld: // This is made for sending more than one body in one packet. Not finished yet
 	{
 		/*MsgUpdateBodies* pMsg = (MsgUpdateBodies*)message->GetData();
 		if (pMsg == nullptr)
@@ -297,40 +357,14 @@ void TDMP::Client::HandleData(EMessage eMsg, SteamNetworkingMessage_t* message)
 	}
 	case k_EMsgPlayerTransform:
 	{
-		MsgPlayerTransform* pMsg = (MsgPlayerTransform*)message->GetData();
+		MsgPlayerData* pMsg = (MsgPlayerData*)message->GetData();
 		if (pMsg == nullptr)
 		{
 			Debug::print("corrupted k_EMsgPlayerTransform received");
 			break;
 		}
 
-		int found = -1;
-		for (uint32 i = 0; i < MaxPlayers; ++i)
-		{
-			if (players[i].Active && players[i].SteamId == pMsg->GetSteamID())
-			{
-				players[i].Position = pMsg->GetPosition();
-				players[i].Rotation = pMsg->GetRotation();
-
-				break;
-			}
-			else if (!players[i].Active) // So point is if we haven't found player at all, then we won't go through player array again, to find empty slot to create new player class
-			{
-				found = i;
-
-				break;
-			}
-		}
-
-		if (found != -1)
-		{
-			players[found].SteamId = pMsg->GetSteamID();
-
-			players[found].Position = pMsg->GetPosition();
-			players[found].Rotation = pMsg->GetRotation();
-
-			players[found].Active = true;
-		}
+		HandlePlayerData(pMsg);
 
 		break;
 	}

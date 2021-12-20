@@ -29,6 +29,7 @@ enum EMessage
 	k_EMsgServerAuthed = k_EMsgServerBegin + 8,
 	k_EMsgClientBeginAuthentication = k_EMsgServerBegin + 9,
 	k_EMsgClientExiting = k_EMsgServerBegin + 10,
+	k_EMsgVehicleDriving = k_EMsgServerBegin + 11,
 
 	// Player data
 	k_EMsgPlayerTransform = k_EMsgServerBegin + 20,
@@ -76,18 +77,51 @@ private:
 	uint64 m_ulSteamID;
 };
 
-struct MsgPlayerTransform
+struct MsgVehicle
 {
-	MsgPlayerTransform() : m_dwMessageType(LittleDWord(k_EMsgPlayerTransform)) {}
+	float throttle;
+	float steer;
+	float handbrake;
+
+	int16_t id;
+};
+
+/// <summary>
+/// Contains transfornm data, currently driving vehicle and current hold object
+/// </summary>
+struct MsgPlayerData
+{
+	MsgPlayerData() : m_dwMessageType(LittleDWord(k_EMsgPlayerTransform)) {}
 	DWORD GetMessageType() { return LittleDWord(m_dwMessageType); }
 
-	void SetPlayer(CSteamID steamid, td::Vec3 position, td::Vec4 rotation)
+	void SetPlayer(CSteamID steamid, td::Vec3 position, td::Vec4 rotation, MsgVehicle vehicle)
 	{
 		id = LittleQWord(steamid.ConvertToUint64());
 		pos = position;
 		rot = rotation;
+		curVeh = vehicle;
+	}
+
+	void SetPlayer(td::Vec3 position, td::Vec4 rotation)
+	{
+		pos = position;
+		rot = rotation;
+
+		curVeh.throttle = 0;
+		curVeh.steer = 0;
+		curVeh.handbrake = 0;
+		curVeh.id = 0;
+
+		if (glb::scene->m_CurrentVehicle != 0)
+		{
+			curVeh.throttle = glb::scene->m_CurrentVehicle->m_MoveInput.x;
+			curVeh.steer = glb::scene->m_CurrentVehicle->m_MoveInput.y;
+			curVeh.handbrake = glb::scene->m_CurrentVehicle->m_Handbrake;
+			curVeh.id = glb::scene->m_CurrentVehicle->Id;
+		}
 	};
 
+	MsgVehicle GetVehicle() { return curVeh; }
 	const uint64& GetSteamID() const { return LittleQWord(id); }
 	const td::Vec3& GetPosition() const { return pos; }
 	const td::Vec4& GetRotation() const { return rot; }
@@ -96,6 +130,7 @@ private:
 	uint64 id;
 	td::Vec3 pos;
 	td::Vec4 rot;
+	MsgVehicle curVeh;
 };
 
 struct MsgBody
@@ -241,6 +276,27 @@ struct MsgClientExiting
 private:
 	const DWORD m_dwMessageType;
 	uint64 id;
+};
+
+/// <summary>
+/// TODO: Vehicle is driven and we need to let all clients know about it
+/// </summary>
+struct MsgServerVehicleDriven
+{
+	MsgServerVehicleDriven() : m_dwMessageType(LittleDWord(k_EMsgVehicleDriving)) {}
+	DWORD GetMessageType() { return LittleDWord(m_dwMessageType); }
+
+	void SetVehicle(TDVehicle* veh)
+	{
+		data.id = veh->Id;
+
+		data.handbrake = veh->m_Handbrake;
+		data.steer = veh->m_MoveInput.y;
+		data.throttle = veh->m_MoveInput.x;
+	}
+private:
+	const DWORD m_dwMessageType;
+	MsgVehicle data;
 };
 
 struct MsgServerAuthed

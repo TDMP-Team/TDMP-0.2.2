@@ -26,12 +26,11 @@ namespace TDMP
 
 		void CreateLobby();
 
-		/// <summary>
-		/// Tick method for client
-		/// </summary>
 		void Tick();
 
 		void Frame();
+
+		void LuaTick();
 
 		/// <summary>
 		/// Recieves incoming network data
@@ -49,8 +48,9 @@ namespace TDMP
 		void Disconnect();
 
 		/// <summary>
-		/// Adds packet to the packet list
+		/// This is used for applying received data about player. Turned it into a separate function because it's calling from both server and client sides
 		/// </summary>
+		void HandlePlayerData(MsgPlayerData* pData);
 
 		void HandleData(EMessage eMsg, SteamNetworkingMessage_t* message);
 

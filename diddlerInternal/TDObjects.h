@@ -15,7 +15,7 @@ enum class gameState : int8_t {
 	quitting = 6
 };
 
-static const char* gameStateTXT[] {
+static const char* gameStateTXT[]{
 	"splash",
 	"menu",
 	"start_ui",
@@ -66,7 +66,6 @@ public:
 	Entity* pParent;		//0x10
 	Entity* pSibling;		//0x18
 	Entity* pChild;			//0x20
-
 	virtual void	Destroy(Entity* entity, bool freeMemory);
 	virtual Entity* SetParent(Entity* entity, Entity* parent);
 	virtual void	Function2();
@@ -150,7 +149,7 @@ public:
 	char pad_00E6[2]; //0x00E6
 
 	int countContainedShapes() {
-		Entity* shapePtr = pChild;
+		Entity* shapePtr = this->pChild;
 		int counter = 0;
 		while (shapePtr != 0) {
 			shapePtr = shapePtr->pSibling;
@@ -164,33 +163,22 @@ public:
 class TDShape : public Entity
 {
 public:
-//0x0028
-
-	//byte fuckYouPadding[8];
-	//byte attributes;
-	//char pad_008[19];
-	td::Vec3 pOffset;
-	td::Vec4 rOffset;
-	td::Vec3 posMin; //0x0044
-	td::Vec3 posMax; //0x0050
-	char pad_005C[4]; //0x005C
-	void* pDormantSomething; //0x0060
-	void* pActiveSomething; //0x0068
-	char pad_0070[4]; //0x0070
-	float Density; //0x0074
-	float Hardness; //0x0078
-	int32_t Texture; //0x007C
-	char pad_0080[12]; //0x0080
-	float TextureIntensity; //0x008C
-	TDVox* pVox; //0x0090
-	char pad_0098[8]; //0x0098
-	void* pJoints; //0x00A0 
-	float Intergrity; //0x00A8
-	bool isBroken; //0x00AC
-	char pad_00AD[3]; //0x00AD
+	td::Vec3 pOffset; //0x0000
+    td::Vec4 rOffset; //0x000C
+    td::Vec3 posMin; //0x001C
+    td::Vec3 posMax; //0x0028
+    char pad_0034[22]; //0x0034
+    bool collide; //0x004A
+    char pad_004B[9]; //0x004B
+    int32_t Texture; //0x007C
+    char pad_0080[24]; //0x0080
+    TDVox* pVox; //0x0098
+    char pad_00A0[16]; //0x00A0
+    float Intergrity; //0x00B0
+    bool isBroken; //0x00B4
 
 	TDBody* getParentBody() {
-		return (TDBody*)(pParent);
+		return (TDBody*)(this->pParent);
 	}
 }; //Size: 0xB0
 
@@ -245,12 +233,12 @@ public:
 	byte isAttacking;			//0x0EA - 0x0EB
 	byte paddingF[0x70];		//0x0EB - 0x154
 	float health;				//0x15C - 0x160
-	byte paddingG[0x2C0];		//0x160 - 0x418
+	byte paddingG[0x488];		//0x160 - 0x418
 	char heldItemName[13];		//0x3CB - 0x3D8
 
 	td::Vec3 cameraEuler() {
-		float vecX =     -(2 * (cameraQuat.w * cameraQuat.y + cameraQuat.z * cameraQuat.x));
-		float vecY =     -(2 * (cameraQuat.x * cameraQuat.y - cameraQuat.z * cameraQuat.w));
+		float vecX = -(2 * (cameraQuat.w * cameraQuat.y + cameraQuat.z * cameraQuat.x));
+		float vecY = -(2 * (cameraQuat.x * cameraQuat.y - cameraQuat.z * cameraQuat.w));
 		float vecZ = -(1 - 2 * (cameraQuat.w * cameraQuat.w + cameraQuat.x * cameraQuat.x));
 
 		return { vecX, vecY, vecZ };
@@ -281,7 +269,7 @@ class TDLight : Entity {
 	};
 
 public:
-	bool m_Enabled; 
+	bool m_Enabled;
 	uint8_t pad29[3];
 	Type m_LightType;
 	uint8_t pad2D[3];
@@ -299,10 +287,10 @@ public:
 	float m_Glare;
 	uint64_t qword84;
 	uint64_t qword8C;
-	bool byte94; 
+	bool byte94;
 	uint8_t pad95[3];
 	uint32_t dword98;
-	uint16_t word9C; 
+	uint16_t word9C;
 	uint8_t pad9D[2];
 	uint8_t gap9f[520]; // This is a ShaderBinding instance
 	uint8_t qword2A8[56]; // This is a Buffer instance
@@ -369,6 +357,77 @@ public:
 	int32_t field_C74;
 };
 
+class TDVehicle;
+
+class TDWheel : public Entity
+{
+public:
+	TDVehicle* m_Vehicle;	  //0x0028
+	TDBody* m_VehicleBody;  //0x0030
+	TDBody* m_WheelBody;	  //0x0038
+	TDShape* m_WheelShape;  //0x0040
+	char pad_0048[56];	  //0x0048
+	float m_Steer;		  //0x0080
+	float m_Drive;		  //0x0084
+	glm::vec3 m_Travel;	  //0x0088
+	char pad_0094[24];	  //0x0094
+	float m_TurnSpeed;	  //0x00AC
+	char pad_00B0[64];	  //0x00B0
+};
+
+class TDVehicle : public Entity
+{
+public:
+	TDBody* m_Body;					  //0x0028
+	glm::vec3 m_Position;			  //0x0030
+	glm::quat m_Rotation;			  //0x003C
+	char pad_004C[28];				  //0x004C
+	td::small_vector<TDWheel*> m_Wheels;	  //0x0068
+	char pad_0078[62];				  //0x0078
+	int m_State;
+	float m_TopSpeed;				  //0x00BC
+	char pad_00C0[4];				  //0x00C0
+	float m_Spring;					  //0x00C4
+	float m_Damping;				  //0x00C8
+	float m_Acceleration;			  //0x00CC
+	float m_Strength;				  //0x00D0
+	float m_Friction;				  //0x00D4
+	char pad_00D8[4];				  //0x00D8
+	bool m_Driven;					  //0x00DC
+	char pad_00DD[3];				  //0x00DD
+	float m_Antispin;				  //0x00E0
+	float m_SteerAssist;			  //0x00E4
+	char pad_00E8[4];				  //0x00E8
+	float m_Antiroll;				  //0x00EC
+	float m_Difflock;				  //0x00F0
+	char pad_00F4[4];				  //0x00F4
+	char* m_Sound;					  //0x00F8
+	char pad_0100[60];				  //0x0100
+	/// <summary>
+	/// X - Throttle (1: forward; -1: backward)<para/>
+	/// Y - Steering (1: left; -1: right)<para/>
+	/// ----no Z - Handbrake (1: Active; 0: Not active)<para/>
+	/// 0x013C
+	/// </summary>
+	glm::vec2 m_MoveInput;			  
+	float m_Handbrake;				  //0x0144
+	glm::vec2 m_MouseInput;
+	//float m_M1Down;					  //0x0148
+	//float m_M2Down;					  //0x014C
+	char pad_0150[8];				  //0x0150
+	float m_Turn;					  //0x0158
+	float m_AccelerationCompletion;	  //0x015C
+	float m_BrakePower;				  //0x0160
+	float m_AccelerationCompletion2;  //0x0164
+	char pad_0168[4];				  //0x0168
+	float m_VehicleCondition;		  //0x016C
+	char pad_0170[264];				  //0x0170
+	bool m_RemoteDrive;		      //0x0278
+	float m_RemoteThrottle;			  //0x027C
+	float m_RemoteSteering;			  //0x0280
+	bool m_RemoteHandbrake;			  //0x0284
+};							  //Size: 0x0288 (not valid)
+
 class TDScene {
 public:
 	char pad_0008[136];									//0x0008
@@ -377,11 +436,11 @@ public:
 	td::Vec3 m_SpawnPos;								//0x00A8
 	char pad_00D4[20];									//0x00B4
 	TDLight* m_Flashlight;								//0x00C8
-	char pad_00D0[56];									//0x00D0
-	void* m_CurrentVehicle;								//0x0108
-	void* m_CurrentScreen;								//0x0110
-	td::Vec3 m_ShadowVolumeSize;						//0x0118
-	char pad_0124[252];									//0x0124
+	char pad_00D0[48];									//0x00D0
+	TDVehicle* m_CurrentVehicle;								//0x0100
+	void* m_CurrentScreen;								//0x0102
+	td::Vec3 m_ShadowVolumeSize;						//0x0110
+	char pad_0124[252];									//0x0116
 	td::small_vector<TDBody*>* m_Bodies;						//0x0220
 	td::small_vector<TDShape*>* m_Shapes;						//0x0228
 	td::small_vector<TDLight*>* m_Lights;						//0x0230
@@ -389,8 +448,8 @@ public:
 	td::small_vector<Water*>* m_Waters;						//0x0240
 	td::small_vector<void*>* m_Enemies;						//0x0248
 	td::small_vector<void*>* m_Joints;						//0x0250
-	td::small_vector<void*>* m_Vehicles;					//0x0258
-	td::small_vector<void*>* m_Wheels;						//0x0260
+	td::small_vector<TDVehicle*>* m_Vehicles;					//0x0258
+	td::small_vector<TDWheel*>* m_Wheels;						//0x0260
 	td::small_vector<TDScreen*>* m_Screens;						//0x0268
 	td::small_vector<void*>* m_Triggers;					//0x0270
 	td::small_vector<void*>* m_Scripts;					//0x0278

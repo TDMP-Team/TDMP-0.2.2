@@ -2,7 +2,6 @@
 #include "types.h"
 #include "Global.h"
 #include <cfloat>
-#include "camera.h"
 #include "objectSpawner.h"
 
 std::vector<TDShape*> knownShapes = {};

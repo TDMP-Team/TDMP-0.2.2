@@ -7,7 +7,6 @@
 #include "console.h"
 #include <iostream>
 #include "Global.h"
-#include "noclip.h"
 #include <string>
 #include "Raycaster.h"
 #include <regex>
@@ -117,150 +116,6 @@ struct comm_help : public command {
 	}
 };
 
-struct comm_noclip: public command {
-	comm_noclip() {
-		commandT = "noclip";
-		helpText = "Toggles noclip mode | Args: None";
-	}
-
-	DWORD exec(std::vector<std::string> args) override {
-		noclip::ToggleNoclip();
-		if (noclip::inNoclip) {
-			console::writeConsole("Noclip enabled", MSG_GENERIC);
-		}
-		else {
-			console::writeConsole("Noclip disabled", MSG_GENERIC);
-		}
-
-		return COMM_OK;
-	}
-};
-
-struct comm_explode : public command {
-	comm_explode() {
-		commandT = "explode";
-		helpText = "Creates an explosion | Args: X, Y, Z, Power";
-	}
-
-	DWORD exec(std::vector<std::string> args) override {
-		try {
-			if (args.size() < 4) {
-				return COMM_ERROR_ARGS;
-			}
-
-			float X;
-			float Y;
-			float Z;
-
-			if (args[1] + args[2] + args[3] == "~~~") {
-				raycaster::rayData rd = raycaster::castRayPlayer();
-				X = rd.worldPos.x;
-				Y = rd.worldPos.y;
-				Z = rd.worldPos.z;
-			}
-			else {
-				X = std::stof(args[1]);
-				Y = std::stof(args[2]);
-				Z = std::stof(args[3]);
-			}
-
-			float P = std::stof(args[4]);
-
-			td::Vec3 centerpoint = { X, Y, Z };
-			glb::TDcreateExplosion((uintptr_t)glb::scene, &centerpoint, P);
-			console::writeConsole("Created explosion @ " + std::to_string(X) + ", " + std::to_string(Y) + ", " + std::to_string(Z), MSG_GENERIC);
-			return COMM_OK;
-		}
-		catch(const std::invalid_argument& e){
-			return COMM_ERROR_ARGS;
-		}
-	}
-};
-
-struct comm_tp : public command {
-	comm_tp() {
-		commandT = "tp";
-		helpText = "Teleports the player to a location | Args: X, Y, Z";
-	}
-
-	DWORD exec(std::vector<std::string> args) override {
-		try {
-			if (args.size() < 4) {
-				return COMM_ERROR_ARGS;
-			}
-
-			float X;
-			float Y;
-			float Z;
-
-			if (args[1] + args[2] + args[3] == "~~~") {
-				raycaster::rayData rd = raycaster::castRayPlayer();
-				X = rd.worldPos.x;
-				Y = rd.worldPos.y;
-				Z = rd.worldPos.z;
-			}
-			else {
-				X = std::stof(args[1]);
-				Y = std::stof(args[2]);
-				Z = std::stof(args[3]);
-			}
-
-			if (noclip::inNoclip) {
-				glb::player->cameraPosition = { X, Y, Z };
-			}
-			else {
-				glb::player->position = { X, Y, Z };
-			}
-
-			console::writeConsole("Teleported to: " + std::to_string(X) + ", " + std::to_string(Y) + ", " + std::to_string(Z), MSG_GENERIC);
-			return COMM_OK;
-		}
-		catch (const std::invalid_argument& e) {
-			return COMM_ERROR_ARGS;
-		}
-	}
-};
-
-struct comm_spawn : public command {
-	comm_spawn() {
-		commandT = "spawn";
-		helpText = "Spawns the supplied .vox file where the player is looking | Args: Path";
-	}
-
-	DWORD exec(std::vector<std::string> args) override {
-		try {
-			if (args.size() < 2) {
-				return COMM_ERROR_ARGS;
-			}
-
-			std::filesystem::path f{ args[1] };
-
-			if (!std::filesystem::exists(f)) {
-				console::writeConsole("Path not found: " + args[1], MSG_ERROR);
-				return COMM_ERROR_EXEC;
-			}
-
-			std::string voxFileExt = args[1].substr(args[1].size() - 4, 4);
-			if (voxFileExt != ".vox") {
-				console::writeConsole("Invalid path: " + args[1], MSG_ERROR);
-				return COMM_ERROR_EXEC;
-			}
-
-			raycaster::rayData rd = raycaster::castRayPlayer();
-
-			td::small_string ssPath = td::small_string(args[1].c_str());
-			spawner::placeFreeObject(args[1]);
-			std::vector<std::string> sPath = splitPath(args[1]);
-			console::writeConsole("Spawned " + sPath.back() + " @ " + std::to_string(rd.worldPos.x) + ", " + std::to_string(rd.worldPos.y) + ", " + std::to_string(rd.worldPos.z), MSG_GENERIC);
-
-			return COMM_OK;
-		}
-		catch (const std::invalid_argument& e) {
-			return COMM_ERROR_ARGS;
-		}
-	}
-};
-
 struct comm_health : public command {
 	comm_health() {
 		commandT = "health";
@@ -356,11 +211,7 @@ namespace console {
 		if (commands.size() == 0) {
 			commands.push_back(new comm_clear());
 			commands.push_back(new comm_help());
-			commands.push_back(new comm_noclip());
-			commands.push_back(new comm_explode());
 			commands.push_back(new comm_health());
-			commands.push_back(new comm_tp());
-			commands.push_back(new comm_spawn());
 		}
 		
 		if (consoleOpen) {

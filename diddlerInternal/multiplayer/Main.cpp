@@ -17,7 +17,7 @@
 #include "Lobby.h"
 #include "Messages.h"
 
-std::string TDMP::Version = "0.8.0";
+std::string TDMP::Version = "0.9.0";
 bool TDMP::LevelLoaded = false;
 std::vector<TDBody*> TDMP::levelBodies{};
 
@@ -148,6 +148,12 @@ void TDMP::Frame()
 
 	if (TDMP::server != nullptr)
 		TDMP::server->Frame();
+}
+
+void TDMP::LuaTick()
+{
+	if (TDMP::client != nullptr)
+		TDMP::client->LuaTick();
 }
 
 void TDMP::SetGameState(int state)

@@ -1,6 +1,7 @@
 #pragma once
 #include "steam/headers/steam_api.h"
 #include "Main.h"
+#include "Messages.h"
 #include "../Global.h"
 #include "../objectSpawner.h"
 
@@ -17,6 +18,9 @@ namespace TDMP
 
 		spawner::spawnedObject body;
 
+		TDVehicle* currentVehicle;
+		MsgVehicle vehicleInput;
+
 		/// <summary>
 		/// Applies position on player. Don't call it if you're just syncing positions between players, in other case jitter move may happen (or stuck at all?)
 		/// </summary>
@@ -32,6 +36,13 @@ namespace TDMP
 		void RemoveBodyIfExists();
 
 		bool IsMe();
+	
+		/// <summary>
+		/// Calls each frame
+		/// </summary>
+		void Frame();
+
+		void LuaTick();
 	};
 
 	extern Player players[MaxPlayers];

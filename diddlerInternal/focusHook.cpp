@@ -2,19 +2,13 @@
 #include "types.h"
 #include "Global.h"
 #include <cfloat>
-#include "Mods.h"
 
 namespace focusHook {
 
     bool hkGetFocus(void* a1){
-        mods::isGameFocused = glb::oIsActive(a1);
+        glb::isGameFocused = glb::oIsActive(a1);
 
-        if (mods::dontLockWhenOutOfFocus) {
-            return true;
-        }
-        else {
-            return mods::isGameFocused;
-        }
+        return true;
     }
 
     void initFocusHook() {

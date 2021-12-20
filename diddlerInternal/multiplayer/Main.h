@@ -115,6 +115,8 @@ namespace TDMP
     /// Calls each frame
     /// </summary>
     void Frame();
+    
+    void LuaTick();
 
     /// <summary>
     /// Should be called from lua right after level was loaded. If we was alone in lobby -> then do not call this and close the lobby

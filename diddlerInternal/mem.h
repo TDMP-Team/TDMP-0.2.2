@@ -10,7 +10,7 @@ namespace mem
 	void Null(BYTE* dst, unsigned int size);
 	uintptr_t FindDMAAddy(uintptr_t ptr, std::vector<unsigned int> offsets);
 	bool Compare(const BYTE* pData, const BYTE* bMask, const char* szMask);
-	DWORD64 FindPattern(BYTE* bMask, const char* szMask, HMODULE hModule);
+	DWORD64 FindPattern(BYTE* bMask, const char* szMask, HMODULE hModule, float* integrity = 0);
 	bool Hook(char* src, char* dst, int len);
 	char* TrampHook(char* src, char* dst, unsigned int len);
 }

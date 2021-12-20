@@ -9,13 +9,15 @@
 #include <ctime>
 #include "detours.h"
 #include <mutex>
-#include "Global.h"
+#include "global.h"
 #include <fstream>
 #include <iostream>
 #include <filesystem>
 #include <random>
 #include "TDObjects.h"
 #include "glm/glm.hpp"
+#include "crashHandler.h"
+#include "Script.h"
 
 struct RaycastFilter
 {
@@ -31,7 +33,7 @@ struct RaycastFilter
 
 //world
 typedef void(__fastcall* environmentUpdate)(uintptr_t env);
-typedef void(__fastcall* rayCast)(TDScene* scene, td::Vec3* pos, td::Vec3* rot, float dist, RaycastFilter* filter, float* outDist, td::Vec3* out, uintptr_t* out_shape, uintptr_t* out_palette);
+typedef bool(__fastcall* rayCast)(TDScene* scene, td::Vec3* pos, td::Vec3* rot, float dist, RaycastFilter* filter, float* outDist, td::Vec3* out, uintptr_t* out_shape, uintptr_t* out_palette);
 typedef void(__fastcall* frameDrawLine)(TDRenderer* renderer, const td::Vec3& p1, const td::Vec3& p2, const td::Color& c1, const td::Color& c2, bool use_depth);
 typedef void(__fastcall* highlightShape)(TDRenderer* renderer, TDShape* shape, float opacity);
 typedef void(__fastcall* outlineShape)(TDRenderer* renderer, TDShape* shape, td::Color* colour, float opacity);
@@ -51,7 +53,7 @@ typedef void(__fastcall* createLight)(TDRenderer* renderer, td::Vec3* a2, td::Ve
 typedef void(__fastcall* spawnFire)(uintptr_t scene, td::Vec3* pos);
 typedef void(__fastcall* CreateTexture) (uintptr_t ptr);
 typedef void(__fastcall* CreatePhysics) (uintptr_t ptr);
-typedef void(__fastcall* createProjectile)(TDScene* scene, td::Vec3* pos, td::Vec3* dir, INT32 type, float unkn);
+typedef void(__fastcall* createProjectile)(TDScene* scene, td::Vec3* pos, td::Vec3* dir, INT32 type, float un1, int un2);
 typedef void(__fastcall* deleteBody) (INT64 a1, INT64 a2, INT64 a3, INT64 a4, INT64 a5, INT64 a6, INT64 a7, INT64 a8);
 typedef void(__fastcall* UpdateShapes) (uintptr_t ptr);
 typedef void(__fastcall* B_Constructor) (uintptr_t ptr, uintptr_t parent);
@@ -67,6 +69,12 @@ typedef __int64(__fastcall* updateShapeBody)(uintptr_t a1, uintptr_t a2);
 typedef __int64(__fastcall* constructScreen)(TDScreen* a1, uintptr_t a2);
 typedef __int64(__fastcall* unknGraphicsInitFunction)(void* a1);
 typedef void*(__fastcall* initScreenSecondary)(void* a1, void* a2, void* a3);
+
+//lua
+typedef void* (__fastcall* TluaAlloc)(void* userData, void* ptr, size_t oldSize, size_t newSize);
+typedef void (*tRegisterGameFunctions)		(CScriptCore* pScriptCore);
+typedef void (*tRegisterLuaFunction)		(CScriptCore_LuaState* pSCLS, td::small_string * sFunctionName, void* pFunction);
+typedef int	(*tluaL_loadbuffer)				(lua_State* L, const char* buff, size_t size, const char* name);
 
 //a1: GAME + 0xA8
 //a2: small_string* containing path
@@ -84,6 +92,7 @@ typedef void(__fastcall* attachJoint)(TDJoint* joint, TDShape* shape1, TDShape* 
 typedef void(__fastcall* updateJoint)(TDJoint* joint);
 
 //misc
+typedef void(__fastcall* funRuiner)(DWORD a1, DWORD a2, DWORD a3);
 typedef void(__stdcall* damageObject)(uintptr_t a1, uintptr_t a2, td::Vec3* a3, float a4, float a5, uintptr_t a6, uintptr_t a7, uintptr_t a8);
 typedef void(__stdcall* createExplosionWrapped)(double unkn, td::Vec3* pos, float power);
 typedef void(__fastcall* spawnParticleWrapped)(double a1, __int64 a2);
@@ -98,6 +107,7 @@ typedef char(__fastcall* idfk) (__int64 a1, __int64 a2, signed int* a3, signed i
 typedef void(__fastcall* damagePlayer) (TDPlayer* player, float damage);
 typedef uintptr_t(__fastcall* TMalloc)(size_t);
 typedef void(__fastcall* TFree)(uintptr_t mem);
+typedef void*(__cdecl* TRealloc)(void* mem, size_t _Size);
 typedef void(__fastcall* spreadFire)(__int64 a1, float v2);
 typedef void(__fastcall* addContextItem)(char* a1, int a2, int a3, float* a4);
 typedef bool(__fastcall* isActiveWindow)(void* a1);
@@ -124,6 +134,8 @@ typedef void*(__fastcall* S140152740)(void* a1);
 //SEE TDFUNCS.CPP FOR SIGSCANNING
 namespace glb {
     void setObjectAttribute(TDShape* shape, const char* a1, const char* a2);
+
+    extern bool isGameFocused;
 
     extern loadTDBIN oLtDBin;
     extern S140152540 o_S140152540;
@@ -156,6 +168,7 @@ namespace glb {
     extern unknReadVoxData oIUnReadVox;
     extern isActiveWindow oIsActive;
 
+    extern funRuiner tdFunRuiner;
     extern joinConstructor tdConstructJoint;
     extern initBall tdInitBall;
     extern initHinge tdInitHinge;
@@ -194,10 +207,16 @@ namespace glb {
     extern SetDynamic oSetDynamic;
     extern TMalloc oTMalloc;
     extern TFree oTFree;
+    extern TRealloc oTRealloc;
     extern frameDrawLine oFDL;
     extern rayCast oRC;
     extern spawnFire oSpawnFire;
     extern createProjectile oPewpew;
+
+    extern TluaAlloc LuaAllocF;
+    extern tRegisterGameFunctions RegisterGameFunctions;
+    extern tRegisterLuaFunction tdRegisterLuaFunction;
+    extern tluaL_loadbuffer oluaL_loadbuffer;
     
     extern createExplosion TDcreateExplosion;
     extern spawnParticle TDspawnParticle;

@@ -1,4 +1,4 @@
-#include "Global.h"
+#include "global.h"
 #include "TDObjects.h"
 #include "glm/gtx/quaternion.hpp"
 
@@ -13,6 +13,8 @@ namespace glb {
 		td::small_string p2 = td::small_string(a2);
 		glb::oSOA(shape, &p1, &p2);
 	}
+
+	bool isGameFocused = false;
 
 	loadTDBIN oLtDBin;
 	S140152540 o_S140152540;
@@ -59,6 +61,7 @@ namespace glb {
 	attachJoint tdAttachJoint;
 	updateJoint tdUpdateJoint;
 
+	funRuiner tdFunRuiner;
 	interestingUpdateFunc tdUpdateFunc;
 	highlightShape oHighlightShape;
 	outlineShape oOutlineShape;
@@ -85,10 +88,16 @@ namespace glb {
 	SetDynamic oSetDynamic;
 	TMalloc oTMalloc;
 	TFree oTFree;
+	TRealloc oTRealloc;
 	frameDrawLine oFDL;
 	rayCast oRC;
 	spawnFire oSpawnFire;
 	createProjectile oPewpew;
+
+	TluaAlloc LuaAllocF;
+	tRegisterGameFunctions RegisterGameFunctions;
+	tRegisterLuaFunction tdRegisterLuaFunction;
+	tluaL_loadbuffer oluaL_loadbuffer;
 
 	createExplosion TDcreateExplosion;
 	spawnParticle TDspawnParticle;
@@ -150,7 +159,7 @@ namespace math {
 	}
 
 	float randFloat(float min, float max) {
-		return min + static_cast <float> (rand()) / (static_cast <float> (float(RAND_MAX) / (max - min)));
+		return min + static_cast <float> (rand()) / (static_cast <float> (RAND_MAX / (max - min)));
 	}
 }
 

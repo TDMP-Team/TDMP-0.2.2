@@ -5,9 +5,6 @@
 #include <string>
 #include "windows.h"
 #include "Global.h"
-#include "threadedCamera.h"
-#include "toolgun.h"
-#include "physCamera.h"
 #include "multiplayer/Main.h"
 
 namespace constClock {
@@ -48,14 +45,8 @@ namespace constClock {
 		}
 	}
 	
-	std::vector<threadCamera::KMCamera*> removePosition = {};
 	//this function runs at a constant speed, depending on the input mstime
 	void cUpdateFunction() {
 		TDMP::Tick();
-
-		if (threadCamera::runInSeperateThread) {
-			threadCamera::updateGameCameras();
-		}
-
 	}
 }
