@@ -1,0 +1,3 @@
+name = TDMP
+author = TDMP Team
+description = Enable this mod before going in multiplayer. Better to disable it if you're going to play alone.
