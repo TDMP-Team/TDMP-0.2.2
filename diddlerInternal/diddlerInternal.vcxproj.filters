@@ -114,9 +114,6 @@
     <ClInclude Include="mainHook.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="miscPatches.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="movementLoop.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -295,9 +292,6 @@
     </ClCompile>
     <ClCompile Include="mainHook.cpp">
       <Filter>Source Files\Mods</Filter>
-    </ClCompile>
-    <ClCompile Include="miscPatches.cpp">
-      <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="movementLoop.cpp">
       <Filter>Source Files</Filter>

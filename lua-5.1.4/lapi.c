@@ -443,17 +443,10 @@ LUA_API void lua_pushinteger (lua_State *L, lua_Integer n) {
 
 
 LUA_API void lua_pushlstring (lua_State *L, const char *s, size_t len) {
-  printf("Locking\n");
-  printf(s);
-  printf("\n");
   lua_lock(L);
-  printf("Checking\n");
   luaC_checkGC(L);
-  printf("Setting\n");
   setsvalue2s(L, L->top, luaS_newlstr(L, s, len));
-  printf("incr top\n");
   api_incr_top(L);
-  printf("Unlocking\n");
   lua_unlock(L);
 }
 

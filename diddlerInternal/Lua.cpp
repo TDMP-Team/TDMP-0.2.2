@@ -3,15 +3,110 @@
 #include "Lua.h"
 #include "Lua.hpp"
 #include "multiplayer/Main.h"
+#include "multiplayer/Client.h"
+#include "multiplayer/Server.h"
+#include "multiplayer/Player.h"
 
 #include <vector>
+#include <map>
+#include <windef.h>
+#include <WinBase.h>
+#include <detours.h>
+
+#define api_checknelems(L, n)	api_check(L, (n) <= (L->top - L->base))
+
+#define api_checkvalidindex(L, i)	api_check(L, (i) != luaO_nilobject)
+
+#define checkresults(L,na,nr) \
+     api_check(L, (nr) == LUA_MULTRET || (L->ci->top - L->top >= (nr) - (na)))
+
+#define adjustresults(L,nres) \
+    { if (nres == LUA_MULTRET && L->top >= L->ci->top) L->ci->top = L->top; }
+
+struct CallS {  /* data to `f_call' */
+	StkId func;
+	int nresults;
+};
+
+static void f_call(lua_State* L, void* ud) {
+	struct CallS* c = cast(struct CallS*, ud);
+	glb::oluaD_call(L, c->func, c->nresults);
+}
+
+int pcall(lua_State* L, int nargs, int nresults, int errfunc)
+{
+	struct CallS c;
+	int status;
+	ptrdiff_t func;
+
+	lua_lock(L);
+
+	api_checknelems(L, nargs + 1);
+	checkresults(L, nargs, nresults);
+	func = 0;
+
+	c.func = L->top - (nargs + 1);  /* function to be called */
+	c.nresults = nresults;
+	status = glb::oluaD_pcall(L, f_call, &c, savestack(L, c.func), func);
+	adjustresults(L, nresults);
+	lua_unlock(L);
+
+	return status;
+}
+
+static TValue* index2adr(lua_State* L, int idx) {
+	if (idx > 0) {
+		TValue* o = L->base + (idx - 1);
+		api_check(L, idx <= L->ci->top - L->base);
+		if (o >= L->top) return cast(TValue*, luaO_nilobject);
+		else return o;
+	}
+	else if (idx > LUA_REGISTRYINDEX) {
+		api_check(L, idx != 0 && -idx <= L->top - L->base);
+		return L->top + idx;
+	}
+	else switch (idx) {  /* pseudo-indices */
+	case LUA_REGISTRYINDEX: return registry(L);
+	case LUA_ENVIRONINDEX: {
+		Closure* func = curr_func(L);
+		sethvalue(L, &L->env, func->c.env);
+		return &L->env;
+	}
+	case LUA_GLOBALSINDEX: return gt(L);
+	default: {
+		Closure* func = curr_func(L);
+		idx = LUA_GLOBALSINDEX - idx;
+		return (idx <= func->c.nupvalues)
+			? &func->c.upvalue[idx - 1]
+			: cast(TValue*, luaO_nilobject);
+	}
+	}
+}
+
+void settable(lua_State* L, int idx) {
+	StkId t;
+	lua_lock(L);
+	api_checknelems(L, 2);
+	t = index2adr(L, idx);//glb::olua_index2adr(L, idx);//
+	api_checkvalidindex(L, t);
+	glb::oluaV_settable(L, t, L->top - 2, L->top - 1);
+	L->top -= 2;  /* pop index and value */
+	lua_unlock(L);
+}
+
+void pushstring(lua_State* L, const char* str)
+{
+	glb::olua_pushlstring(L, str, strlen(str));
+}
+
+#define api_incr_top(L)   {api_check(L, L->top < L->ci->top); L->top++;}
 
 void Tick(CScriptCore* pSC, lua_State* L, CRetInfo* ret)
 {
 	TDMP::LuaTick();
 }
 
-std::vector<LUA::Callback> callbacks;
+std::vector<LUA::Callback> LUA::callbacks{};
 void RegisterCallback(CScriptCore* pSC, lua_State* L, CRetInfo* ret)
 {
 	TDMP::Debug::print(L);
@@ -26,74 +121,631 @@ void RegisterCallback(CScriptCore* pSC, lua_State* L, CRetInfo* ret)
 		callback.L = L;
 		callback.name = callbackName;
 		callback.ref = luaL_ref(L, LUA_REGISTRYINDEX);
-	
-		callbacks.push_back(callback);
 
-		TDMP::Debug::print("Callback \"" + std::string(callbackName) + "\" was registered");
+		LUA::callbacks.push_back(callback);
+
+		TDMP::Debug::print("Event \"" + std::string(callbackName) + "\" was registered");
 	}
 
 	lua_pop(L, top);
 }
 
-void CallCallback(CScriptCore* pSC, lua_State* L, CRetInfo* ret)
+std::map<std::string, std::map<const char*, LUA::Hook>> LUA::hooks;
+
+struct callHook
+{
+	LUA::Hook hook;
+	std::string json;
+};
+
+std::map<int, std::vector<callHook>> hookQueue;
+
+void AddHook(CScriptCore* pSC, lua_State* L, CRetInfo* ret)
+{
+	int top = lua_gettop(L);
+
+	const char* hookEvent = luaL_checkstring(L, 1);
+	const char* hookName = luaL_checkstring(L, 2);
+
+	if (lua_isfunction(L, 3))
+	{
+		LUA::Hook hook;
+
+		hook.L = L;
+		hook.hook = std::string(hookEvent);
+		hook.name = hookName;
+		hook.ref = luaL_ref(L, LUA_REGISTRYINDEX);
+
+		if (LUA::hooks.count(hook.hook) <= 0)
+			LUA::hooks[hook.hook] = std::map<const char*, LUA::Hook>{};
+
+		LUA::hooks[hook.hook][hook.name] = hook;
+	}
+
+	lua_pop(L, top);
+}
+
+void LUA::RunLuaHooks(const char* hookName, const char* jsonData)
+{
+	for (const auto& [hook, hookListeners] : LUA::hooks)
+	{
+		if (hook == std::string(hookName))
+		{
+			for (const auto& [hookName, hook] : hookListeners)
+			{
+				if (hook.L == nullptr)
+					continue;
+
+				hookQueue[(int)hook.L].push_back(callHook{
+					hook, std::string(jsonData)
+				});
+			}
+
+			break;
+		}
+	}
+}
+
+void RunGlobalHook(CScriptCore* pSC, lua_State* L, CRetInfo* ret)
+{
+	int top = lua_gettop(L);
+
+	const char* hookName = luaL_checkstring(L, 1);
+	const char* jsonData = luaL_checkstring(L, 2);
+	lua_pop(L, top);
+
+	LUA::RunLuaHooks(hookName, jsonData);
+}
+
+void RunHooks(CScriptCore* pSC, lua_State* L, CRetInfo* ret)
+{
+	for (size_t i = 0; i < hookQueue[(int)L].size(); i++)
+	{
+		callHook* cH = &hookQueue[(int)L][i];
+		lua_rawgeti(cH->hook.L, LUA_REGISTRYINDEX, cH->hook.ref);
+
+		pushstring(cH->hook.L, cH->json.c_str());
+		if (pcall(cH->hook.L, 1, 0, 0))
+		{
+			const char* err = lua_tolstring(cH->hook.L, -1, NULL);
+			TDMP::Debug::error(err);
+
+			lua_pop(cH->hook.L, 1);
+		}
+	}
+
+	hookQueue[(int)L].clear();
+}
+
+void LUA::CallCallbacks(const char* callbackName)
+{
+	for (size_t i = 0; i < callbacks.size(); i++)
+	{
+		if (std::string(callbacks[i].name) == std::string(callbackName))
+		{
+			Callback* callback = &callbacks.data()[i];
+
+			if (callback->L == nullptr)
+				continue;
+
+			lua_rawgeti(callback->L, LUA_REGISTRYINDEX, callback->ref);
+
+			if (pcall(callback->L, 0, 0, 0))
+			{
+				const char* err = lua_tolstring(callback->L, -1, NULL);
+				TDMP::Debug::error(err);
+
+				lua_pop(callback->L, 1);
+			}
+		}
+	}
+}
+
+void LUA::CallEvent(const char* eventName, const char* jsonData)
+{
+	for (size_t i = 0; i < callbacks.size(); i++)
+	{
+		Callback* callback = &callbacks.data()[i];
+
+		if (std::string(callback->name) == std::string(eventName))
+		{
+			if (callback->L == nullptr)
+				continue;
+
+			lua_rawgeti(callback->L, LUA_REGISTRYINDEX, callback->ref);
+
+			pushstring(callback->L, jsonData);
+			if (pcall(callback->L, 1, 0, 0))
+			{
+				const char* err = lua_tolstring(callback->L, -1, NULL);
+				TDMP::Debug::error(err);
+
+				lua_pop(callback->L, 1);
+			}
+		}
+	}
+}
+
+void SendCallback(CScriptCore* pSC, lua_State* L, CRetInfo* ret)
 {
 	int top = lua_gettop(L);
 
 	const char* callbackName = luaL_checkstring(L, 1);
-	
-	for (size_t i = 0; i < callbacks.size(); i++)
+
+	bool callbackFound = false;
+	for (size_t i = 0; i < LUA::callbacks.size(); i++)
 	{
-		if (callbacks[i].name == callbackName)
+		if (LUA::callbacks[i].name == callbackName)
 		{
-			lua_rawgeti(callbacks[i].L, LUA_REGISTRYINDEX, callbacks[i].ref);
-			lua_pushvalue(callbacks[i].L, 2);
-			if (lua_pcall(callbacks[i].L, 1, 0, 0))
-			{
-				const char* err = lua_tolstring(callbacks[i].L, -1, NULL);
-				TDMP::Debug::error(err);
-
-				lua_pop(callbacks[i].L, 1);
-			}
-
-			lua_pop(callbacks[i].L, lua_gettop(callbacks[i].L));
+			callbackFound = true;
 
 			break;
 		}
 	}
 
+	if (!callbackFound)
+	{
+		lua_pop(L, top);
+
+		glb::oluaL_error(L, "Unkown callback! (%s)", callbackName);
+
+		return;
+	}
+
+	int secondArgType = lua_type(L, 2);
+	bool reliable = lua_toboolean(L, 3);
+	const char* json = luaL_checkstring(L, 4);
+
+	int sendType = reliable ? k_nSteamNetworkingSend_Reliable : k_nSteamNetworkingSend_Unreliable;
+
+	MsgLuaCallback msg;
+	msg.SetCallback(callbackName);
+	msg.SetJson(json);
+	msg.SetReliable(reliable);
+
+	// If server sends message to the client
+	if (secondArgType == LUA_TSTRING)
+	{
+		if (TDMP::server == nullptr)
+		{
+			lua_pop(L, top);
+			TDMP::Debug::error("Tried to SendEvent without server initialised");
+
+			return;
+		}
+
+		const char* steamId = luaL_checkstring(L, 2);
+		lua_pop(L, top);
+		if (TDMP::playersBySteamId.count(steamId))
+		{
+			TDMP::server->SendDataToConnection(&msg, sizeof(msg), TDMP::players[TDMP::playersBySteamId[steamId]].conn, sendType);
+		}
+		else
+		{
+			TDMP::Debug::error("Tried to send event to unknown SteamID!");
+		}
+
+		return;
+	}
 	lua_pop(L, top);
+
+	// Otherwise client sends message to the server
+	TDMP::client->SendData(&msg, sizeof(msg), sendType);
+}
+
+void BroadcastCallback(CScriptCore* pSC, lua_State* L, CRetInfo* ret)
+{
+	int top = lua_gettop(L);
+
+	if (TDMP::server == nullptr)
+	{
+		lua_pop(L, top);
+
+		TDMP::Debug::error("Tried to broadcast without server initialised");
+
+		return;
+	}
+
+	const char* callbackName = luaL_checkstring(L, 1);
+	bool reliable = lua_toboolean(L, 2);
+	bool sendSelf = lua_toboolean(L, 3);
+	const char* json = luaL_checkstring(L, 4);
+
+	lua_pop(L, top);
+
+	// We're checking does this callback exists at all, so we won't overflow network with empty callbacks 
+	for (size_t i = 0; i < LUA::callbacks.size(); i++)
+	{
+		if (LUA::callbacks[i].name == callbackName)
+		{
+			MsgLuaCallback msg;
+			msg.SetCallback(callbackName);
+			msg.SetJson(json);
+
+			TDMP::server->BroadcastData(&msg, sizeof(msg), reliable ? k_nSteamNetworkingSend_Reliable : k_nSteamNetworkingSend_Unreliable, sendSelf);
+
+			return;
+		}
+	}
+
+	glb::oluaL_error(L, "Unkown callback! (%s)", callbackName);
+}
+
+void pushplayer(lua_State* L, int plyId)
+{
+	TDMP::Player ply = TDMP::players[plyId];
+
+	glb::olua_createtable(L, 0, 4);
+
+	pushstring(L, "steamId");
+	pushstring(L, ply.steamIdStr.c_str());
+	settable(L, -3);
+
+	pushstring(L, "nick");
+	pushstring(L, ply.nick.c_str());
+	settable(L, -3);
+
+	pushstring(L, "id");
+	lua_pushinteger(L, plyId);
+	settable(L, -3);
+
+	pushstring(L, "hp");
+	lua_pushinteger(L, ply.hp);
+	settable(L, -3);
+
+	if (ply.currentVehicle != 0)
+	{
+		pushstring(L, "veh");
+		lua_pushnumber(L, ply.currentVehicle->Id);
+		settable(L, -3);
+	}
+
+	if (ply.body.body != 0 && ply.bodyExists)
+	{
+		pushstring(L, "body");
+		lua_pushnumber(L, ply.body.body->Id);
+		settable(L, -3);
+	}
+}
+
+void GetPlayerTransform(CScriptCore* pSC, lua_State* L, int* ret)
+{
+	int id = luaL_checkinteger(L, 1);
+	lua_pop(L, 1);
+
+	if (id > TDMP::MaxPlayers - 1 || id < 0)
+	{
+		glb::oluaL_error(L, "incorrect id (must be 0-%d)", TDMP::MaxPlayers - 1);
+
+		return;
+	}
+
+	TDMP::Player ply = TDMP::players[id];
+
+	glb::olua_createtable(L, 0, 2);
+
+	pushstring(L, "pos");
+		glb::olua_createtable(L, 0, 3);
+
+		lua_pushnumber(L, 1);
+		lua_pushnumber(L, ply.Position.x);
+		settable(L, -3);
+
+		lua_pushnumber(L, 2);
+		lua_pushnumber(L, ply.Position.y);
+		settable(L, -3);
+
+		lua_pushnumber(L, 3);
+		lua_pushnumber(L, ply.Position.z);
+		settable(L, -3);
+	settable(L, -3);
+
+	pushstring(L, "rot");
+		glb::olua_createtable(L, 0, 4);
+
+		lua_pushnumber(L, 1);
+		lua_pushnumber(L, ply.Rotation.x);
+		settable(L, -3);
+
+		lua_pushnumber(L, 2);
+		lua_pushnumber(L, ply.Rotation.y);
+		settable(L, -3);
+
+		lua_pushnumber(L, 3);
+		lua_pushnumber(L, ply.Rotation.z);
+		settable(L, -3);
+
+		lua_pushnumber(L, 4);
+		lua_pushnumber(L, ply.Rotation.w);
+		settable(L, -3);
+	settable(L, -3);
+
+	(*ret) = 1;
+}
+
+void GetPlayerCameraTransform(CScriptCore* pSC, lua_State* L, int* ret)
+{
+	int id = luaL_checkinteger(L, 1);
+	lua_pop(L, 1);
+
+	if (id > TDMP::MaxPlayers - 1 || id < 0)
+	{
+		glb::oluaL_error(L, "incorrect id (must be 0-%d)", TDMP::MaxPlayers - 1);
+
+		return;
+	}
+
+	TDMP::Player ply = TDMP::players[id];
+
+	glb::olua_createtable(L, 0, 2);
+
+	pushstring(L, "pos");
+		glb::olua_createtable(L, 0, 3);
+
+		lua_pushnumber(L, 1);
+		lua_pushnumber(L, ply.CamPosition.x);
+		settable(L, -3);
+
+		lua_pushnumber(L, 2);
+		lua_pushnumber(L, ply.CamPosition.y);
+		settable(L, -3);
+
+		lua_pushnumber(L, 3);
+		lua_pushnumber(L, ply.CamPosition.z);
+		settable(L, -3);
+	settable(L, -3);
+
+	pushstring(L, "rot");
+		glb::olua_createtable(L, 0, 4);
+
+		lua_pushnumber(L, 1);
+		lua_pushnumber(L, ply.CamRotation.w);
+		settable(L, -3);
+
+		lua_pushnumber(L, 2);
+		lua_pushnumber(L, ply.CamRotation.x);
+		settable(L, -3);
+
+		lua_pushnumber(L, 3);
+		lua_pushnumber(L, ply.CamRotation.y);
+		settable(L, -3);
+
+		lua_pushnumber(L, 4);
+		lua_pushnumber(L, ply.CamRotation.z);
+		settable(L, -3);
+	settable(L, -3);
+
+	(*ret) = 1;
+}
+
+/// <summary>
+/// Returns table of active players
+/// </summary>
+void GetPlayers(CScriptCore* pSC, lua_State* L, int* ret)
+{
+	glb::olua_createtable(L, 0, 0);
+
+	int k = 0;
+	for (uint32 i = 0; i < TDMP::MaxPlayers; ++i)
+	{
+		TDMP::Player ply = TDMP::players[i];
+		if (ply.Active)
+		{
+			lua_pushinteger(L, ++k);
+			pushplayer(L, i);
+			settable(L, -3);
+		}
+	}
+
+	(*ret) = 1;
+}
+
+/// <summary>
+/// Returns player at specific id
+/// </summary>
+void GetPlayer(CScriptCore* pSC, lua_State* L, int* ret)
+{
+	int id = luaL_checkinteger(L, 1);
+	lua_pop(L, 1);
+	
+	if (id > TDMP::MaxPlayers - 1 || id < 0)
+	{
+		glb::oluaL_error(L, "incorrect id (must be 0-%d)", TDMP::MaxPlayers - 1);
+
+		return;
+	}
+
+	pushplayer(L, id);
+
+	(*ret) = 1;
+}
+
+/// <summary>
+/// This function returns not cached player's nick
+/// </summary>
+void GetNick(CScriptCore* pSC, lua_State* L, int* ret)
+{
+	int id = luaL_checkinteger(L, 1);
+	lua_pop(L, lua_gettop(L));
+
+	if (id > TDMP::MaxPlayers - 1 || id < 0)
+	{
+		glb::oluaL_error(L, "incorrect id (must be 0-%d)", TDMP::MaxPlayers - 1);
+
+		return;
+	}
+
+	pushstring(L, SteamFriends()->GetPlayerNickname(TDMP::players[id].SteamId));
+
+	(*ret) = 1;
+}
+
+void GetTableId(CScriptCore* pSC, lua_State* L, int* ret)
+{
+	int top = lua_gettop(L);
+
+	const char* steamId = luaL_checkstring(L, 1);
+	lua_pop(L, top);
+
+	if (TDMP::playersBySteamId.count(steamId))
+	{
+		lua_pushinteger(L, TDMP::playersBySteamId[steamId]);
+
+		(*ret) = 1;
+	}
+}
+
+void IsMe(CScriptCore* pSC, lua_State* L, int* ret)
+{
+	int id = luaL_checkinteger(L, 1);
+	lua_pop(L, 1);
+	
+	if (id > TDMP::MaxPlayers - 1 || id < 0)
+	{
+		glb::oluaL_error(L, "incorrect id (must be 0-%d)", TDMP::MaxPlayers - 1);
+
+		return;
+	}
+
+	lua_pushboolean(L, TDMP::players[id].IsMe());
+
+	(*ret) = 1;
+}
+
+bool notCached = true;
+std::string localSteamId;
+void LocalSteamId(CScriptCore* pSC, lua_State* L, int* ret)
+{
+	if (notCached)
+	{
+		notCached = false;
+
+		localSteamId = std::to_string(SteamUser()->GetSteamID().ConvertToUint64());
+	}
+
+	pushstring(L, localSteamId.c_str());
+
+	(*ret) = 1;
+}
+
+void IsServerInitialised(CScriptCore* pSC, lua_State* L, int* ret)
+{
+	lua_pushboolean(L, TDMP::server != nullptr);
+
+	(*ret) = 1;
+}
+
+void IsServer(CScriptCore* pSC, lua_State* L, int* ret)
+{
+	lua_pushboolean(L, TDMP::IsServer());
+
+	(*ret) = 1;
+}
+
+void SetPlayerModelEnabled(CScriptCore* pSC, lua_State* L, int* ret)
+{
+	int id = luaL_checkinteger(L, 1);
+	bool enable = lua_toboolean(L, 2);
+
+	lua_pop(L, lua_gettop(L));
+
+	if (id > TDMP::MaxPlayers - 1 || id < 0)
+	{
+		glb::oluaL_error(L, "incorrect id (must be 0-%d)", TDMP::MaxPlayers - 1);
+
+		return;
+	}
+
+	if (TDMP::players[id].Active)
+	{
+		if (enable)
+		{
+			TDMP::players[id].hideBody = false;
+			TDMP::players[id].CreateBodyIfNotExists();
+		}
+		else
+		{
+			TDMP::players[id].hideBody = true;
+			TDMP::players[id].RemoveBodyIfExists();
+		}
+	}
+}
+
+void GetPlayerModelEnabled(CScriptCore* pSC, lua_State* L, int* ret)
+{
+	int id = luaL_checkinteger(L, 1);
+	lua_pop(L, lua_gettop(L));
+
+	if (id > TDMP::MaxPlayers - 1 || id < 0)
+	{
+		glb::oluaL_error(L, "incorrect id (must be 0-%d)", TDMP::MaxPlayers - 1);
+
+		return;
+	}
+
+	lua_pushboolean(L, !TDMP::players[id].hideBody);
+
+	(*ret) = 1;
+}
+
+void ConsolePrint(CScriptCore* pSC, lua_State* L, int* ret)
+{
+	int top = lua_gettop(L);
+
+	std::string output = "";
+	for (size_t i = 1; i <= top; i++)
+	{
+		output += lua_tostring(L, i) + std::string("\t");
+	}
+	
+	TDMP::Debug::print(output);
+}
+
+void Update(CScriptCore* pSC, lua_State* L, int* ret)
+{
+	TDMP::LuaUpdate();
+}
+
+void Time(CScriptCore* pSC, lua_State* L, int* ret)
+{
+	lua_pushnumber(L, ((lua_Number)clock()) / (lua_Number)CLOCKS_PER_SEC);
+
+	(*ret) = 1;
 }
 
 void LUA::RegisterLuaCFunctions(CScriptCore_LuaState* pSCLS)
 {
+	hookQueue[(int)*pSCLS->m_LuaState] = std::vector<callHook>{};
+
+	RegisterLuaFunction(pSCLS, "TDMP_ConPrint", ConsolePrint);
+
+	RegisterLuaFunction(pSCLS, "TDMP_UnixTime", Time);
 	RegisterLuaFunction(pSCLS, "TDMP_Tick", Tick);
+	RegisterLuaFunction(pSCLS, "TDMP_Update", Update);
+	RegisterLuaFunction(pSCLS, "TDMP_IsServerInitialised", IsServerInitialised);
+	RegisterLuaFunction(pSCLS, "TDMP_IsServer", IsServer);
 
-	RegisterLuaFunction(pSCLS, "TDMP_RegisterCallback", RegisterCallback);
-	RegisterLuaFunction(pSCLS, "TDMP_CallCallback", CallCallback);
+	RegisterLuaFunction(pSCLS, "TDMP_RegisterEvent", RegisterCallback);
+	RegisterLuaFunction(pSCLS, "TDMP_SendEvent", SendCallback);
+	RegisterLuaFunction(pSCLS, "TDMP_BroadcastEvent", BroadcastCallback);
+
+	RegisterLuaFunction(pSCLS, "TDMP_GetPlayers", GetPlayers);
+
+	RegisterLuaFunction(pSCLS, "TDMP_GetPlayer", GetPlayer);
+	RegisterLuaFunction(pSCLS, "TDMP_GetPlayerTransform", GetPlayerTransform);
+	RegisterLuaFunction(pSCLS, "TDMP_GetPlayerCameraTransform", GetPlayerCameraTransform);
+	RegisterLuaFunction(pSCLS, "TDMP_SetPlayerBodyEnabled", SetPlayerModelEnabled);
+
+	RegisterLuaFunction(pSCLS, "TDMP_LocalSteamId", LocalSteamId);
+	RegisterLuaFunction(pSCLS, "TDMP_IsMe", IsMe);
+
+	RegisterLuaFunction(pSCLS, "TDMP_RunGlobalHook", RunGlobalHook);
+	RegisterLuaFunction(pSCLS, "TDMP_AddGlobalHookListener", AddHook);
+	RegisterLuaFunction(pSCLS, "TDMP_Hook_Queue", RunHooks);
 }
-
-void* luaAlloc(void* userData, void* ptr, size_t oldSize, size_t newSize)
-{ 
-	if (newSize == 0)
-	{
-		if (ptr != nullptr)
-			glb::oTFree((uintptr_t)ptr);
-		
-		return NULL;
-	}
-	else
-		return glb::oTRealloc(ptr, newSize);
-}
-
 
 void hRegisterGameFunctions(CScriptCore* pSC)
 {
-	void* ud;
-	lua_Alloc a = lua_getallocf(*pSC->m_SCLuaState.m_LuaState, &ud);
-	TDMP::Debug::print(a);
-
-	lua_setallocf(*pSC->m_SCLuaState.m_LuaState, a, ud);
-
 	glb::RegisterGameFunctions(pSC);
 
 	TDMP::Debug::print("Registering lua functions");
@@ -106,12 +758,22 @@ int hluaL_loadbuffer(lua_State* L, const char* buff, size_t size, const char* na
 	return glb::oluaL_loadbuffer(L, buff, size, name);
 }
 
+void makehole(TDScene* scene, td::Vec3* position, float damageA, float damageB, int unkn1, int* unkn2)
+{
+	
+}
+
 void LUA::HookRegisterGameFunctions()
 {
 	DetourTransactionBegin();
 	DetourUpdateThread(GetCurrentThread());
 	DetourAttach(&(PVOID&)glb::RegisterGameFunctions, hRegisterGameFunctions);
 	DetourTransactionCommit();
+
+	//DetourTransactionBegin();
+	//DetourUpdateThread(GetCurrentThread());
+	//DetourAttach(&(PVOID&)glb::oWrappedDamage, makehole);
+	//DetourTransactionCommit();
 }
 
 int CallLuaFunction(lua_State* L) {
@@ -126,8 +788,6 @@ int CallLuaFunction(lua_State* L) {
 
 void LUA::RegisterLuaFunction(CScriptCore_LuaState* pSCLS, const char* cFunctionName, void* pFunction)
 {
-	TDMP::Debug::print("Registering " + std::string(cFunctionName));
-
 	lua_pushlightuserdata(*pSCLS->m_LuaState, pFunction);
 	lua_pushlightuserdata(*pSCLS->m_LuaState, pSCLS);
 	lua_pushcclosure(*pSCLS->m_LuaState, CallLuaFunction, 2);

@@ -22,6 +22,8 @@
 #include "../glm/gtc/quaternion.hpp"
 #include "../glm/vec3.hpp"
 
+#include "../Lua.h"
+
 #include <cmath>
 
 TDMP::Server* TDMP::server;
@@ -105,6 +107,8 @@ void TDMP::Server::OnSteamServersConnected(SteamServersConnected_t* pCallback)
 	SteamMatchmaking()->SetLobbyGameServer(TDMP::lobby->id, 0, 0, serverId);//ip.m_unIPv4, port, serverId);
 	//SteamMatchmaking()->SetLobbyJoinable(lobby->id, false);
 	Debug::print("Marked lobby as started", Env::Server);
+
+	LUA::CallCallbacks("ServerInitialised");
 }
 
 void TDMP::Server::Tick()
@@ -116,26 +120,35 @@ void TDMP::Server::Tick()
 		return;
 
 	ReceiveNetData();
+}
+
+std::vector<LuaCallbackQueue> callbackQueue;
+void TDMP::Server::LuaTick()
+{
+	if (!ConnectedToSteam)
+		return;
 
 	if (glb::game->State != gameState::ingame || !TDMP::LevelLoaded)
 		return;
-
-	// TODO: Send to clients all currently driving vehicles, for making vehicles which controlled by Lua be synced too
-	/*for (size_t i = 0; i < glb::scene->m_Vehicles->size(); i++)
+	
+	int callbacks = callbackQueue.size();
+	if (callbacks > 0)
 	{
-		TDVehicle* v = glb::scene->m_Vehicles->data()[i];
-
-		if (v != 0)
+		for (size_t i = 0; i < callbacks; i++)
 		{
-			v->m_RemoteDrive = true;
-			v->m_RemoteThrottle = 1;
-			v->m_RemoteSteering = 1;
-			v->m_RemoteHandbrake = false;
+			LUA::CallEvent(callbackQueue[i].callback.c_str(), callbackQueue[i].json.c_str());
 		}
-	}*/
 
-	//std::vector<MsgUpdateBodies> msgs;
-	//std::vector<MsgBody> bodies;
+		callbackQueue.clear();
+	}
+}
+
+void TDMP::Server::LuaUpdate()
+{
+	int bodiesId = 0;
+	int packs = 0;
+
+	MsgUpdateBodies msg;
 	for (size_t i = 0; i < TDMP::levelBodies.size(); i++)
 	{
 		TDBody* body = TDMP::levelBodies[i];
@@ -144,8 +157,8 @@ void TDMP::Server::Tick()
 			continue;
 
 		float len = pow(body->Velocity.x, 2) + pow(body->Velocity.y, 2) + pow(body->Velocity.z, 2);
-		
-		if (len == 0 || len <= 0.007f)
+
+		if (len == 0 || len <= 0.008f)
 			continue;
 
 		// Game crashes when trying to access `VoxelCount` of a vehicle
@@ -156,24 +169,32 @@ void TDMP::Server::Tick()
 
 			// Expensive, I guess?
 			while (shape != 0) {
-				if (shape->Type == entityType::Shape && shape->pVox != 0)
+				if (shape->Type == entityType::Shape && shape->pVox != 0) // TOOD: Crashes sometimes saying that shape address was changed or smth like that
 					voxelCount += shape->pVox->VoxelCount;
 
 				shape = (TDShape*)shape->pSibling;
 			}
 
-			if (voxelCount <= 9)
+			if (voxelCount <= 10)
 				continue;
 		}
 
-		MsgUpdateBody msg;
-		msg.SetBody(body);
-		server->BroadcastData(&msg, sizeof(msg), k_nSteamNetworkingSend_Unreliable);
-		
+		msg.PushBody(bodiesId, MsgBody{ body->Position, body->Rotation, body->Velocity, body->RotationVelocity, body->Id });
+		bodiesId++;
+
+		// if next body would reach limit of packet
+		if (bodiesId + 1 >= 24)
+		{
+			server->BroadcastData(&msg, sizeof(msg), k_nSteamNetworkingSend_Unreliable); // then send it
+
+			packs++;
+			bodiesId = 0;
+		}
+
 		/*if (bodies.size() >= 100)
 		{
 			MsgUpdateBodies msg;
-			
+
 			msg.Serialize(bodies);
 			//msg.PushBodies(bodies);
 			msgs.push_back(msg);
@@ -183,6 +204,16 @@ void TDMP::Server::Tick()
 
 		bodies.push_back(MsgBody{ body->Position, body->Rotation, body->Velocity, body->RotationVelocity, body->Id });*/
 	}
+
+	// Sending last body array
+	if (bodiesId > 0)
+	{
+		packs++;
+
+		server->BroadcastData(&msg, sizeof(msg), k_nSteamNetworkingSend_Unreliable);
+	}
+
+	//Debug::print("Sent in total " + std::to_string(packs) + " packs of bodies", Env::Server);
 
 	/*
 	// if bodies vector isn't empty (so it wasn't pushed to the packets to be sent), then we need to push it here
@@ -259,17 +290,31 @@ void TDMP::Server::ReceiveNetData()
 				if (client.Active && client.handle == connection)
 				{
 					// Here we're setting steamid of client which sent to us information about him. We can also make it here sending position from server's side (Like if we were simulating player movement on serverside),
-					// but this mod would be used by friends so we don't really need to use anti-exploit things here?
+					// but this mod would be used by friends so we don't really need to use anti-exploit/cheat things here?
 
 					MsgPlayerData msg;
-					msg.SetPlayer(client.SteamIDUser, pMsg->GetPosition(), pMsg->GetRotation(), pMsg->GetVehicle());
+					msg.SetPlayer(client.SteamIDUser, pMsg->GetPosition(), pMsg->GetRotation(), pMsg->GetCamPosition(), pMsg->GetCamRotation(), pMsg->GetVehicle(), pMsg->GetHealth(), pMsg->GetCtrl());
 
 					server->BroadcastData(&msg, sizeof(msg), k_nSteamNetworkingSend_Unreliable);
-					TDMP::client->HandlePlayerData(&msg);
+					TDMP::client->HandlePlayerData(&msg, &connection);
 
 					break;
 				}
 			}
+
+			break;
+		}
+		case k_EMsgLuaCallback:
+		{
+			MsgLuaCallback* pMsg = (MsgLuaCallback*)message->GetData();
+			if (pMsg == nullptr)
+			{
+				Debug::print("corrupted k_EMsgLuaCallback received");
+				break;
+			}
+
+			// pcall must be called from game loop
+			callbackQueue.push_back(LuaCallbackQueue{ std::string(pMsg->GetCallback()), std::string(pMsg->GetJson()) });
 
 			break;
 		}
@@ -463,14 +508,14 @@ TDMP::Server::ClientConnectionData_t TDMP::Server::GetPlayerByID(uint64_t id)
 	return ConnectionNone;
 }
 
-void TDMP::Server::BroadcastData(const void* pData, uint32 nSizeOfData, int nSendFlags)
+void TDMP::Server::BroadcastData(const void* pData, uint32 nSizeOfData, int nSendFlags, bool sendSelf)
 {
 	for (uint32 i = 0; i < MaxPlayers; ++i)
 	{
 		ClientConnectionData_t client = ClientData[i];
 		if (client.Active)
 		{
-			if (client.SteamIDUser != GetSteamID())
+			if (sendSelf || client.SteamIDUser != GetSteamID())
 				SendDataToConnection(pData, nSizeOfData, client.handle, nSendFlags);
 		}
 	}

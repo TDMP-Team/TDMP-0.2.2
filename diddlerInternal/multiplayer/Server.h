@@ -38,7 +38,7 @@ namespace TDMP
 		/// <summary>
 		/// Broadcasts(Sends to all) data to all players
 		/// </summary>
-		void BroadcastData(const void* pData, uint32 nSizeOfData, int nSendFlags);
+		void BroadcastData(const void* pData, uint32 nSizeOfData, int nSendFlags, bool sendSelf = false);
 
 		/// <summary>
 		/// Gets the player with the specified SteamID. Returns nullptr if player wasn't found
@@ -60,6 +60,9 @@ namespace TDMP
 		/// Tick method for server
 		/// </summary>
 		void Tick();
+
+		void LuaTick();
+		void LuaUpdate();
 
 		void Frame();
 

@@ -3,12 +3,15 @@
 #include "Lobby.h"
 #include "Player.h"
 #include <thread>
+#include <Windows.h>
 
 #include "../drawCube.h"
 #include "../objectSpawner.h"
 #include "../glm/glm.hpp"
 #include "../glm/gtc/quaternion.hpp"
 #include "../glm/vec3.hpp"
+
+#include "../Lua.h"
 
 TDMP::Client* TDMP::client;
 std::vector<std::string> TDMP::packets;
@@ -99,6 +102,7 @@ void TDMP::Client::SendData(const void* pData, uint32 nSizeOfData, int nSendFlag
 	}
 }
 
+std::vector<LuaCallbackQueue> clientCallbackQueue;
 void TDMP::Client::LuaTick()
 {
 	for (uint32 i = 0; i < MaxPlayers; ++i)
@@ -107,6 +111,17 @@ void TDMP::Client::LuaTick()
 		{
 			players[i].LuaTick();
 		}
+	}
+
+	int callbacks = clientCallbackQueue.size();
+	if (callbacks > 0)
+	{
+		for (size_t i = 0; i < callbacks; i++)
+		{
+			LUA::CallEvent(clientCallbackQueue[i].callback.c_str(), clientCallbackQueue[i].json.c_str());
+		}
+
+		clientCallbackQueue.clear();
 	}
 }
 
@@ -123,7 +138,7 @@ void TDMP::Client::Tick()
 
 	MsgPlayerData msg;
 
-	glm::quat rot(glm::vec3(0, -glb::player->camYaw + 270, -1.57f));
+	glm::quat rot(glm::vec3(0, (-glb::player->camYaw + 270), -1.57f)); //  * pi / 180.0
 	td::Vec4 finalRot;
 
 	finalRot.x = rot.x;
@@ -131,7 +146,7 @@ void TDMP::Client::Tick()
 	finalRot.z = rot.z;
 	finalRot.w = rot.w;
 
-	msg.SetPlayer(glb::player->position, finalRot);
+	msg.SetPlayer(glb::player->position, finalRot, glb::player->cameraPosition, glb::player->cameraQuat);
 
 	client->SendData(&msg, sizeof(msg), k_nSteamNetworkingSend_Unreliable);
 }
@@ -197,8 +212,11 @@ void TDMP::Client::Disconnect()
 	serverHandle = k_HSteamNetConnection_Invalid;
 }
 
-void TDMP::Client::HandlePlayerData(MsgPlayerData* pData)
+void TDMP::Client::HandlePlayerData(MsgPlayerData* pData, HSteamNetConnection* conn)
 {
+	if (!LevelLoaded)
+		return;
+
 	int found = -1;
 	for (uint32 i = 0; i < MaxPlayers; ++i)
 	{
@@ -207,7 +225,12 @@ void TDMP::Client::HandlePlayerData(MsgPlayerData* pData)
 			players[i].Position = pData->GetPosition();
 			players[i].Rotation = pData->GetRotation();
 
-			// welocme to the shit code?
+			players[i].CamPosition = pData->GetCamPosition();
+			players[i].CamRotation = pData->GetCamRotation();
+
+			players[i].hp = pData->GetHealth();
+
+			// welocme to the hell
 			MsgVehicle v = pData->GetVehicle();
 			if (v.id != 0) // Player is driving a vehicle
 			{
@@ -241,14 +264,29 @@ void TDMP::Client::HandlePlayerData(MsgPlayerData* pData)
 
 	if (found != -1)
 	{
+		players[found].id = found;
 		players[found].SteamId = pData->GetSteamID();
+		players[found].steamIdStr = std::to_string(players[found].SteamId.ConvertToUint64());
+		players[found].nick = SteamFriends()->GetFriendPersonaName(pData->GetSteamID());
+
+		playersBySteamId[players[found].steamIdStr.c_str()] = found;
 
 		players[found].Position = pData->GetPosition();
 		players[found].Rotation = pData->GetRotation();
 
-		players[found].Active = true;
-	}
+		players[found].CamPosition = pData->GetCamPosition();
+		players[found].CamRotation = pData->GetCamRotation();
 
+		players[found].hp = pData->GetHealth();
+		players[found].isCtrlPressed = pData->GetCtrl();
+
+		players[found].Active = true;
+		players[found].bodyExists = false;
+		players[found].hideBody = false;
+
+		if (conn != nullptr)
+			players[found].conn = (HSteamNetConnection)conn;
+	}
 }
 
 void TDMP::Client::HandleData(EMessage eMsg, SteamNetworkingMessage_t* message)
@@ -283,47 +321,34 @@ void TDMP::Client::HandleData(EMessage eMsg, SteamNetworkingMessage_t* message)
 
 		break;
 	}
-	case k_EMsgServerUpdateWorld: // This is made for sending more than one body in one packet. Not finished yet
+	case k_EMsgServerUpdateWorld: // This is made for sending more than one body in one packet.
 	{
-		/*MsgUpdateBodies* pMsg = (MsgUpdateBodies*)message->GetData();
+		MsgUpdateBodies* pMsg = (MsgUpdateBodies*)message->GetData();
 		if (pMsg == nullptr)
 		{
 			Debug::print("corrupted k_EMsgServerUpdateWorld received");
 			break;
 		}
 
-		pMsg->Deserialize();
-		// temp. Not sure if I can do it better with current api
-		// i REALLY hate how it looks like. So I hope there is a better way of doing this
-		Debug::print(std::string("Received body data ") + std::to_string(pMsg->GetBodies().size()));
-		for (size_t j = 0; j < pMsg->GetBodies().size(); j++)
+		for (size_t i = 0; i < pMsg->GetBodiesCount(); i++)
 		{
-			MsgBody* netBody = pMsg->GetBodies().data()[j];
-		
-			for (size_t i = 0; i < TDMP::levelBodies.size(); i++)
+			if (levelBodiesById.count(pMsg->GetBodies()[i].id))
 			{
-				TDBody* body = TDMP::levelBodies[i];
+				TDBody* body = TDMP::levelBodies[levelBodiesById[pMsg->GetBodies()[i].id]];
 
-				if (body == 0)
-					continue;
+				body->isAwake = true;
+				body->countDown = 0x0F;
 
-				if (netBody->id == body->Id)
-				{
-					Debug::print(std::string("Applying received data to body ") + std::to_string(body->Id));
-
-					body->Position = netBody->pos;
-					body->Rotation = netBody->rot;
-					body->Velocity = netBody->vel;
-					body->RotationVelocity = netBody->rotVel;
-
-					break;
-				}
+				body->Position = pMsg->GetBodies()[i].pos;
+				body->Rotation = pMsg->GetBodies()[i].rot;
+				body->Velocity = pMsg->GetBodies()[i].vel;
+				body->RotationVelocity = pMsg->GetBodies()[i].rotVel;
 			}
-		}*/
+		}
 
 		break;
 	}
-	case k_EMsgServerUpdateBody:
+	case k_EMsgServerUpdateBody: // Sending one body only
 	{
 		MsgUpdateBody* pMsg = (MsgUpdateBody*)message->GetData();
 		if (pMsg == nullptr)
@@ -332,27 +357,32 @@ void TDMP::Client::HandleData(EMessage eMsg, SteamNetworkingMessage_t* message)
 			break;
 		}
 
-		for (size_t i = 0; i < TDMP::levelBodies.size(); i++)
+		if (levelBodiesById.count(pMsg->GetBody().id))
 		{
-			TDBody* body = TDMP::levelBodies[i];
+			TDBody* body = TDMP::levelBodies[levelBodiesById[pMsg->GetBody().id]];
 
-			if (body == 0)
-				continue;
+			body->isAwake = true;
+			body->countDown = 0x0F;
 
-			if (pMsg->GetBody().id == body->Id)
-			{
-				body->isAwake = true;
-				body->countDown = 0x0F;
-
-				body->Position = pMsg->GetBody().pos;
-				body->Rotation = pMsg->GetBody().rot;
-				body->Velocity = pMsg->GetBody().vel;
-				body->RotationVelocity = pMsg->GetBody().rotVel;
-
-				break;
-			}
+			body->Position = pMsg->GetBody().pos;
+			body->Rotation = pMsg->GetBody().rot;
+			body->Velocity = pMsg->GetBody().vel;
+			body->RotationVelocity = pMsg->GetBody().rotVel;
 		}
 
+		break;
+	}
+	case k_EMsgLuaCallback:
+	{
+		MsgLuaCallback* pMsg = (MsgLuaCallback*)message->GetData();
+		if (pMsg == nullptr)
+		{
+			Debug::print("corrupted k_EMsgLuaCallback received");
+			break;
+		}
+
+		clientCallbackQueue.push_back(LuaCallbackQueue{ std::string(pMsg->GetCallback()), std::string(pMsg->GetJson()) });
+		
 		break;
 	}
 	case k_EMsgPlayerTransform:
@@ -381,7 +411,9 @@ void TDMP::Client::HandleData(EMessage eMsg, SteamNetworkingMessage_t* message)
 		{
 			if (players[i].Active && players[i].SteamId == pMsg->GetSteamID())
 			{
-				Debug::print("Player " + std::to_string(players[i].SteamId.ConvertToUint64()) + " disconnected", Env::Client);
+				Debug::print("Player " + players[i].steamIdStr + " disconnected", Env::Client);
+
+				LUA::RunLuaHooks("PlayerDisconnected", players[i].steamIdStr.c_str());
 
 				players[i].RemoveBodyIfExists();
 				players[i].Active = false;
@@ -397,12 +429,18 @@ void TDMP::Client::HandleData(EMessage eMsg, SteamNetworkingMessage_t* message)
 		connectionState = k_EClientNotConnected;
 		serverHandle = k_HSteamNetConnection_Invalid;
 		Debug::print("Server was closed", Env::Client);
+		
+		LUA::RunLuaHooks("ServerConnectionClosed", "");
+
 		break;
 	}
 	case k_EMsgServerAuthed:
 	{
 		connectionState = k_EClientConnectedAndAuthenticated;
 		Debug::print("Welcome to the server", Env::Client);
+
+		LUA::RunLuaHooks("ConnectedToServer", "");
+
 		break;
 	}
 	default:

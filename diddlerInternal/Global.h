@@ -18,6 +18,7 @@
 #include "glm/glm.hpp"
 #include "crashHandler.h"
 #include "Script.h"
+#include "Lua.hpp"
 
 struct RaycastFilter
 {
@@ -75,6 +76,18 @@ typedef void* (__fastcall* TluaAlloc)(void* userData, void* ptr, size_t oldSize,
 typedef void (*tRegisterGameFunctions)		(CScriptCore* pScriptCore);
 typedef void (*tRegisterLuaFunction)		(CScriptCore_LuaState* pSCLS, td::small_string * sFunctionName, void* pFunction);
 typedef int	(*tluaL_loadbuffer)				(lua_State* L, const char* buff, size_t size, const char* name);
+typedef int	(*tluaD_call)				(lua_State* L, StkId func, int nResults);
+typedef int	(*tluaD_pcall)				(lua_State* L, Pfunc func, void* u, ptrdiff_t old_top, ptrdiff_t ef);
+
+//lua push functions and stuff
+typedef void (*tluaL_error)				(lua_State* L, const char* fmt, ...);
+typedef const char* (__fastcall* tlua_pushfstring)				(lua_State* L, const char* fmt, ...);
+typedef int(__fastcall* tlua_pushlstring)				(lua_State* L, const char* s, size_t);
+typedef int(__fastcall* tlua_createtable)				(lua_State* L, int narray, int nrec);
+typedef int(__fastcall* tluaV_gettable)				(lua_State* L, const TValue* t, TValue* key, StkId val);
+typedef int(__fastcall* tluaV_settable)				(lua_State* L, const TValue* t, TValue* key, StkId val);
+typedef int(__fastcall* tluaS_newlstr)				(lua_State* L, const char* str, size_t l);
+typedef TValue*(__fastcall* tlua_index2adr)				(lua_State* L, int idx);
 
 //a1: GAME + 0xA8
 //a2: small_string* containing path
@@ -217,6 +230,17 @@ namespace glb {
     extern tRegisterGameFunctions RegisterGameFunctions;
     extern tRegisterLuaFunction tdRegisterLuaFunction;
     extern tluaL_loadbuffer oluaL_loadbuffer;
+    extern tluaD_pcall oluaD_pcall;
+    extern tluaD_call oluaD_call;
+
+    extern tluaL_error oluaL_error;
+    extern tlua_pushfstring olua_pushfstring;
+    extern tlua_pushlstring olua_pushlstring;
+    extern tlua_createtable olua_createtable;
+    extern tluaV_gettable oluaV_gettable;
+    extern tluaV_settable oluaV_settable;
+    extern tluaS_newlstr oluaS_newlstr;
+    extern tlua_index2adr olua_index2adr;
     
     extern createExplosion TDcreateExplosion;
     extern spawnParticle TDspawnParticle;

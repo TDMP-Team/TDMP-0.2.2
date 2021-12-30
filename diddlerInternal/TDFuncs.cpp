@@ -16,6 +16,11 @@ void printIntegPercentage(float p) {
     SetConsoleTextAttribute(hConsole, 15);
 }
 
+void hLog(td::small_string* msg)
+{
+    printf_s("[Game Log] %s\n", msg->c_str());
+}
+
 void sigscanItems() {
     //glb::oTdDelBdy = (deleteBody)mem::FindPattern((PBYTE)"\x48\x83\xEC\x28\x48\x8B\xCA\x33\xD2\xE8\x82\x16\x0F\x00\x48\x8B", "xxxxxxxxxxxxxxxx", GetModuleHandle(NULL), &percentage);
     //glb::oMakeHole = (makeHole)mem::FindPattern((PBYTE)"\x48\x8B\xC4\x53\x48\x81\xEC\x90\x00\x00\x00\x0F\x29\x70\xE8\x4C\x8D\x40\xA8\x48\x8B\xDA\x0F\x29\x78\xD8\x44\x0F\x29\x40\xC8\x48", "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx", GetModuleHandle(NULL), &percentage);
@@ -53,7 +58,7 @@ void sigscanItems() {
     bool sigScanError = false;
     float percentage = 0;
 
-    glb::TDOL = *(TDObjectList**)(glb::moduleBase + 0x00455100);
+    glb::TDOL = *(TDObjectList**)(glb::moduleBase + 0x00456140);
     glb::game = (TDGame*)glb::TDOL;
     glb::scene = (TDScene*)glb::TDOL->objs[9];
     glb::renderer = (TDRenderer*)glb::TDOL->objs[8];
@@ -293,6 +298,66 @@ void sigscanItems() {
     printIntegPercentage(percentage);
     if (!glb::oluaL_loadbuffer) { sigScanError = true; }
 
+    glb::oluaD_pcall = (tluaD_pcall)mem::FindPattern((PBYTE)"\x48\x89\x5C\x24\x00\x48\x89\x6C\x24\x00\x48\x89\x74\x24\x00\x48\x89\x7C\x24\x00\x41\x54\x41\x56\x41\x57\x48\x83\xEC\x20\x4C\x8B\x71\x28\x49\x8B\xD9\x48\x8B\x44\x24\x00\x48\x8B\xF9\x48\x8B\xA9\x00\x00\x00\x00", "xxxx?xxxx?xxxx?xxxx?xxxxxxxxxxxxxxxxxxxxx?xxxxxx????", GetModuleHandle(NULL), &percentage);
+    printf_s("oluaD_pcall           : %p", glb::oluaD_pcall);
+    printIntegPercentage(percentage);
+    if (!glb::oluaD_pcall) { sigScanError = true; }
+
+    glb::oluaD_call = (tluaD_call)mem::FindPattern((PBYTE)"\x48\x89\x5C\x24\x00\x48\x89\x74\x24\x00\x57\x48\x83\xEC\x20\x66\xFF\x41\x60\x48\x8B\xD9\x0F\xB7\x41\x60", "xxxx?xxxx?xxxxxxxxxxxxxxxx", GetModuleHandle(NULL), &percentage);
+    printf_s("oluaD_call           : %p", glb::oluaD_call);
+    printIntegPercentage(percentage);
+    if (!glb::oluaD_call) { sigScanError = true; }
+
+    glb::oluaL_error = (tluaL_error)mem::FindPattern((PBYTE)"\x48\x89\x54\x24\x00\x4C\x89\x44\x24\x00\x4C\x89\x4C\x24\x00\x53\x56\x57\x48\x83\xEC\x20\xBA\x00\x00\x00\x00\x48\x8D\x74\x24\x00\x48\x8B\xD9\xE8\x00\x00\x00\x00", "xxxx?xxxx?xxxx?xxxxxxxx????xxxx?xxxx????", GetModuleHandle(NULL), &percentage);
+    printf_s("oluaL_error           : %p", glb::oluaL_error);
+    printIntegPercentage(percentage);
+    if (!glb::oluaL_error) { sigScanError = true; }
+
+    glb::olua_pushfstring = (tlua_pushfstring)mem::FindPattern((PBYTE)"\x48\x89\x54\x24\x00", "xxxx?", GetModuleHandle(NULL), &percentage);
+    printf_s("olua_pushfstring           : %p", glb::olua_pushfstring);
+    printIntegPercentage(percentage);
+    if (!glb::olua_pushfstring) { sigScanError = true; }
+
+    glb::olua_pushlstring = (tlua_pushlstring)mem::FindPattern((PBYTE)"\x48\x89\x5C\x24\x00\x48\x89\x6C\x24\x00\x48\x89\x74\x24\x00\x57\x48\x83\xEC\x20\x4C\x8B\x49\x20\x49\x8B\xF0\x48\x8B\xEA\x48\x8B\xF9\x49\x8B\x41\x70\x49\x39\x41\x78\x72\x05", "xxxx?xxxx?xxxx?xxxxxxxxxxxxxxxxxxxxxxxxxxxx", GetModuleHandle(NULL), &percentage);
+    printf_s("olua_pushlstring           : %p", glb::olua_pushlstring);
+    printIntegPercentage(percentage);
+    if (!glb::olua_pushlstring) { sigScanError = true; }
+
+    glb::olua_createtable = (tlua_createtable)mem::FindPattern((PBYTE)"\x48\x89\x5C\x24\x00\x48\x89\x6C\x24\x00\x48\x89\x74\x24\x00\x57\x48\x83\xEC\x20\x4C\x8B\x49\x20\x41\x8B\xF0\x8B\xEA\x48\x8B\xF9\x49\x8B\x41\x70\x49\x39\x41\x78\x72\x05", "xxxx?xxxx?xxxx?xxxxxxxxxxxxxxxxxxxxxxxxxxx", GetModuleHandle(NULL), &percentage);
+    printf_s("olua_createtable           : %p", glb::olua_createtable);
+    printIntegPercentage(percentage);
+    if (!glb::olua_createtable) { sigScanError = true; }
+
+    glb::oluaV_settable = (tluaV_settable)mem::FindPattern((PBYTE)"\x48\x89\x5C\x24\x00\x48\x89\x6C\x24\x00\x56\x41\x54\x41\x55\x41\x56\x41\x57\x48\x83\xEC\x30\x4D\x8B\xE1\x48\x89\x7C\x24\x00\x4D\x8B\xF8\x4C\x8D\x2D\x00\x00\x00\x00\x4C\x8B\xF2\x48\x8B\xF1\x33\xED", "xxxx?xxxx?xxxxxxxxxxxxxxxxxxxx?xxxxxx????xxxxxxxx", GetModuleHandle(NULL), &percentage);
+    printf_s("oluaV_settable           : %p", glb::oluaV_settable);
+    printIntegPercentage(percentage);
+    if (!glb::oluaV_settable) { sigScanError = true; }
+
+    glb::oluaV_gettable = (tluaV_gettable)mem::FindPattern((PBYTE)"\x48\x89\x5C\x24\x00\x48\x89\x6C\x24\x00\x48\x89\x74\x24\x00\x48\x89\x7C\x24\x00\x41\x54\x41\x56\x41\x57\x48\x83\xEC\x30\x4D\x8B\xF9\x4C\x8D\x25\x00\x00\x00\x00\x4D\x8B\xF0\x48\x8B\xFA\x48\x8B\xF1\x33\xED", "xxxx?xxxx?xxxx?xxxx?xxxxxxxxxxxxxxxx????xxxxxxxxxxx", GetModuleHandle(NULL), &percentage);
+    printf_s("oluaV_gettable           : %p", glb::oluaV_gettable);
+    printIntegPercentage(percentage);
+    if (!glb::oluaV_gettable) { sigScanError = true; }
+
+    glb::oluaS_newlstr = (tluaS_newlstr)mem::FindPattern((PBYTE)"\x48\x89\x5C\x24\x00\x48\x89\x6C\x24\x00\x48\x89\x74\x24\x00\x57\x41\x56\x41\x57\x48\x83\xEC\x20\x49\x8B\xF0\x41\x8B\xF8", "xxxx?xxxx?xxxx?xxxxxxxxxxxxxxx", GetModuleHandle(NULL), &percentage);
+    printf_s("oluaS_newlstr           : %p", glb::oluaS_newlstr);
+    printIntegPercentage(percentage);
+    if (!glb::oluaS_newlstr) { sigScanError = true; }
+
+    glb::olua_index2adr = (tlua_index2adr)mem::FindPattern((PBYTE)"\x85\xD2\x7E\x1F", "xxxx", GetModuleHandle(NULL), &percentage);
+    printf_s("olua_index2adr           : %p", glb::olua_index2adr);
+    printIntegPercentage(percentage);
+    if (!glb::olua_index2adr) { sigScanError = true; }
+
+    DWORD64 Log = mem::FindPattern((PBYTE)"\x80\x79\x0F\x00\x74\x03\x48\x8B\x09\x48\x8B\xD1\x48\x8D\x0D\x00\x00\x00\x00", "xxxxxxxxxxxxxxx????", GetModuleHandle(NULL), &percentage);
+    printf_s("Log           : %p", &Log);
+    printIntegPercentage(percentage);
+    if (!Log) { sigScanError = true; }
+    else {
+        DetourTransactionBegin();
+        DetourUpdateThread(GetCurrentThread());
+        DetourAttach(&(PVOID&)Log, hLog);
+        DetourTransactionCommit();
+    }
 
     if (sigScanError) {
         std::cout << "[F] FAILED TO FIND A CRITICAL FUNCTION, EXPECT ISSUES" << std::endl;

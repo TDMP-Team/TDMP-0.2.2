@@ -84,6 +84,7 @@
     <IncludePath>E:\visual studio projects\knedmod\MS Detours;E:\visual studio projects\knedmod\glew\GL;E:\visual studio projects\knedmod\lua-5.1.4;$(IncludePath)</IncludePath>
     <LibraryPath>E:\visual studio projects\knedmod\lua-5.1.4;E:\visual studio projects\knedmod\MS Detours;E:\visual studio projects\knedmod\glew;$(LibraryPath)</LibraryPath>
     <ExternalIncludePath>$(ExternalIncludePath)</ExternalIncludePath>
+    <TargetName>tdmp</TargetName>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -209,7 +210,6 @@
     <ClInclude Include="mainHook.h" />
     <ClInclude Include="maths.h" />
     <ClInclude Include="memhandler.h" />
-    <ClInclude Include="miscPatches.h" />
     <ClInclude Include="movementLoop.h" />
     <ClInclude Include="objectSpawner.h" />
     <ClInclude Include="Raycaster.h" />
@@ -276,7 +276,6 @@
     <ClCompile Include="mainHook.cpp" />
     <ClCompile Include="maths.cpp" />
     <ClCompile Include="memhandler.cpp" />
-    <ClCompile Include="miscPatches.cpp" />
     <ClCompile Include="movementLoop.cpp" />
     <ClCompile Include="multiplayer\Client.cpp" />
     <ClCompile Include="multiplayer\Lobby.cpp" />

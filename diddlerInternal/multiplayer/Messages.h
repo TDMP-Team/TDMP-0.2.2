@@ -15,6 +15,7 @@
 
 #include "../types.h"
 #include "Main.h"
+#include <Windows.h>
 
 // Network message types
 enum EMessage
@@ -30,10 +31,10 @@ enum EMessage
 	k_EMsgClientBeginAuthentication = k_EMsgServerBegin + 9,
 	k_EMsgClientExiting = k_EMsgServerBegin + 10,
 	k_EMsgVehicleDriving = k_EMsgServerBegin + 11,
+	k_EMsgLuaCallback = k_EMsgServerBegin + 12,
 
 	// Player data
 	k_EMsgPlayerTransform = k_EMsgServerBegin + 20,
-	k_EMsgPlayerInput = k_EMsgServerBegin + 21,
 
 	// P2P authentication messages
 	k_EMsgP2PBegin = 600,
@@ -87,25 +88,32 @@ struct MsgVehicle
 };
 
 /// <summary>
-/// Contains transfornm data, currently driving vehicle and current hold object
+/// Contains transfornm data and currently driving vehicle
 /// </summary>
 struct MsgPlayerData
 {
 	MsgPlayerData() : m_dwMessageType(LittleDWord(k_EMsgPlayerTransform)) {}
 	DWORD GetMessageType() { return LittleDWord(m_dwMessageType); }
 
-	void SetPlayer(CSteamID steamid, td::Vec3 position, td::Vec4 rotation, MsgVehicle vehicle)
+	void SetPlayer(CSteamID steamid, td::Vec3 position, td::Vec4 rotation, td::Vec3 camPosition, td::Vec4 camRotation, MsgVehicle vehicle, float hp, bool ctrl)
 	{
 		id = LittleQWord(steamid.ConvertToUint64());
 		pos = position;
 		rot = rotation;
+		camPos = camPosition;
+		camRot = camRotation;
 		curVeh = vehicle;
+		this->hp = hp;
+		this->ctrl = ctrl;
 	}
 
-	void SetPlayer(td::Vec3 position, td::Vec4 rotation)
+	void SetPlayer(td::Vec3 position, td::Vec4 rotation, td::Vec3 camPosition, td::Vec4 camRotation)
 	{
 		pos = position;
 		rot = rotation;
+
+		camPos = camPosition;
+		camRot = camRotation;
 
 		curVeh.throttle = 0;
 		curVeh.steer = 0;
@@ -114,23 +122,90 @@ struct MsgPlayerData
 
 		if (glb::scene->m_CurrentVehicle != 0)
 		{
-			curVeh.throttle = glb::scene->m_CurrentVehicle->m_MoveInput.x;
+			curVeh.throttle = TDMP::localInputData.W ? 1 : TDMP::localInputData.S ? -1 : 0; // glb::scene->m_CurrentVehicle->m_MoveInput.x
 			curVeh.steer = glb::scene->m_CurrentVehicle->m_MoveInput.y;
 			curVeh.handbrake = glb::scene->m_CurrentVehicle->m_Handbrake;
 			curVeh.id = glb::scene->m_CurrentVehicle->Id;
 		}
-	};
+
+		hp = 1;
+		//hp = glb::player->health;
+		ctrl = TDMP::localInputData.Ctrl;
+	}
 
 	MsgVehicle GetVehicle() { return curVeh; }
+
+	const float GetHealth() const { return hp; }
+	const bool GetCtrl() const { return ctrl; }
+
 	const uint64& GetSteamID() const { return LittleQWord(id); }
+
 	const td::Vec3& GetPosition() const { return pos; }
 	const td::Vec4& GetRotation() const { return rot; }
+	const td::Vec3& GetCamPosition() const { return camPos; }
+	const td::Vec4& GetCamRotation() const { return camRot; }
 private:
 	const DWORD m_dwMessageType;
 	uint64 id;
 	td::Vec3 pos;
 	td::Vec4 rot;
+	td::Vec3 camPos;
+	td::Vec4 camRot;
 	MsgVehicle curVeh;
+	float hp;
+	bool ctrl;
+};
+
+struct LuaCallbackQueue
+{
+	std::string callback;
+	std::string json;
+};
+
+struct MsgLuaCallback
+{
+	MsgLuaCallback() : m_dwMessageType(LittleDWord(k_EMsgLuaCallback)) {}
+	DWORD GetMessageType() { return LittleDWord(m_dwMessageType); }
+
+	void SetCallback(const char* callback)
+	{
+		//callbackName[strlen(callback)];
+		//callbackName = callback;
+		strncpy(callbackName, callback, strlen(callback) + 1);
+		callbackName[strlen(callback) + 1] = '\0';
+	}
+
+	void SetJson(const char* js)
+	{
+		//json[strlen(json)];
+		strncpy(json, js, strlen(js) + 1);
+		json[strlen(js) + 1] = '\0';
+	}
+
+	void SetReliable(bool rel)
+	{
+		reliable = rel;
+	}
+
+	const char* GetJson()
+	{
+		return json;
+	}
+
+	const char* GetCallback()
+	{
+		return callbackName;
+	}
+
+	const bool GetReliable()
+	{
+		return reliable;
+	}
+private:
+	const DWORD m_dwMessageType;
+	bool reliable;
+	char callbackName[32];
+	char json[1024];
 };
 
 struct MsgBody
@@ -163,51 +238,36 @@ private:
 };
 
 // My attempts to send vector with bodies
-
-/*struct MsgUpdateBodies
+struct MsgUpdateBodies
 {
 	MsgUpdateBodies() : m_dwMessageType(LittleDWord(k_EMsgServerUpdateWorld)) {}
 	DWORD GetMessageType() { return LittleDWord(m_dwMessageType); }
 
-	void PushBodies(std::vector<MsgBody> toPush)
+	void PushBody(int id, MsgBody toPush)
 	{
-		size = toPush.size();
-		void* pBuffer = std::malloc(size * sizeof(MsgBody));
-
-		int i = 0;
-		for (MsgBody Body : toPush) {
-			i++;
-			memcpy(pBuffer + (i * sizeof(MsgBody)), &Body, sizeof(MsgBody));
-		}
-
-		bodies = pBuffer;
+		if (id >= 24)
+			return;
+		
+		size = id + 1;
+		bodies[id] = toPush;
 	}
 
-	std::vector<MsgBody*> GetBodies()
+	MsgBody* GetBodies()
 	{
-		std::vector<MsgBody*> Bodies;
-
-		//memcpy(&PacketInfo, bodies, sizeof(SPacketInfo));
-
-		for (int i = 0; i < size; i++) {
-			void* pMsgBodyBuff = malloc(sizeof(MsgBody));
-			memcpy(pMsgBodyBuff, (bodies) + (i * sizeof(MsgBody)), sizeof(MsgBody));
-			Bodies.push_back(reinterpret_cast<MsgBody*>(pMsgBodyBuff));
-		};
-
-		return Bodies;
+		return bodies;
 	}
 
-	size_t GetBodiesCount()
+	int GetBodiesCount()
 	{
 		return size;
 	}
 private:
 	const DWORD m_dwMessageType;
 
-	size_t size;
-	void* bodies;
-};*/
+	int size;
+	MsgBody bodies[24];
+};
+
 /*struct SPacketInfo
 {
 	signed char m_Type;

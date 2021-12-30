@@ -50,7 +50,7 @@ namespace TDMP
 		/// <summary>
 		/// This is used for applying received data about player. Turned it into a separate function because it's calling from both server and client sides
 		/// </summary>
-		void HandlePlayerData(MsgPlayerData* pData);
+		void HandlePlayerData(MsgPlayerData* pData, HSteamNetConnection* conn = nullptr);
 
 		void HandleData(EMessage eMsg, SteamNetworkingMessage_t* message);
 

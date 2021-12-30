@@ -3,7 +3,6 @@
 ** Stack and Call structure of Lua
 ** See Copyright Notice in lua.h
 */
-
 #ifndef ldo_h
 #define ldo_h
 

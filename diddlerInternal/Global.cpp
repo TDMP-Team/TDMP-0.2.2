@@ -98,6 +98,17 @@ namespace glb {
 	tRegisterGameFunctions RegisterGameFunctions;
 	tRegisterLuaFunction tdRegisterLuaFunction;
 	tluaL_loadbuffer oluaL_loadbuffer;
+	tluaD_pcall oluaD_pcall;
+	tluaD_call oluaD_call;
+
+	tluaL_error oluaL_error;
+	tlua_pushfstring olua_pushfstring;
+	tlua_pushlstring olua_pushlstring;
+	tlua_createtable olua_createtable;
+	tluaV_gettable oluaV_gettable;
+	tluaV_settable oluaV_settable;
+	tluaS_newlstr oluaS_newlstr;
+	tlua_index2adr olua_index2adr;
 
 	createExplosion TDcreateExplosion;
 	spawnParticle TDspawnParticle;

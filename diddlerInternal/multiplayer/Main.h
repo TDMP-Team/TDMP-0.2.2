@@ -3,20 +3,16 @@
 #include <iostream>
 #include <string>
 #include <Windows.h>
+#include <map>
 
 #include "../Global.h"
 
 namespace TDMP
 {
     /// <summary>
-    /// Update rate of our DLL in ms. Default: 10
+    /// Max amount player for server. Default: 6
     /// </summary>
-    const int Tickrate = 5;
-
-    /// <summary>
-    /// Max amount player for server. Default: 5
-    /// </summary>
-    const int MaxPlayers = 5;
+    const int MaxPlayers = 6;
 
     /// <summary>
     /// Current version of the game
@@ -35,9 +31,22 @@ namespace TDMP
     extern std::vector<TDBody*> levelBodies;
 
     /// <summary>
-    /// Sets current version of the game. Used for making sure that players has same versions of game
-    /// </summary>z
-    void SetGameVersion(const char* version);
+    /// [BodyId] = id in levelBodies
+    /// </summary>
+    extern std::map<int, int> levelBodiesById;
+
+    /// <summary>
+    /// Used for the vehicle input sync
+    /// </summary>
+    struct Input
+    {
+        bool Ctrl; // Used for syncing that player is crouching
+
+        bool W;
+        bool S;
+    };
+
+    extern Input localInputData;
 
     /// <summary>
     /// Updates state of the game in TDMP.dll
@@ -115,8 +124,9 @@ namespace TDMP
     /// Calls each frame
     /// </summary>
     void Frame();
-    
+
     void LuaTick();
+    void LuaUpdate();
 
     /// <summary>
     /// Should be called from lua right after level was loaded. If we was alone in lobby -> then do not call this and close the lobby

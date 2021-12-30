@@ -98,7 +98,7 @@ DWORD WINAPI main(HMODULE hModule)
     std::cout << "|  |/  |    |  |    ___|     \\|   |   |       |     \\ " << std::endl;
     std::cout << "|     <|       |    ___|  --  |       |   -   |  --  |" << std::endl;
     std::cout << "|__|\\__|__|____|_______|_____/|__|_|__|_______|_____/ " << std::endl;
-    std::cout << "For teardown MAIN BRANCH version 0.8.0" << std::endl;
+    std::cout << "For teardown MAIN BRANCH version 0.9.2" << std::endl;
     std::cout << "KnedMod is C to Knedit and is released under the GNU public license" << std::endl;
     std::cout << "" << std::endl;
     std::cout << "" << std::endl;

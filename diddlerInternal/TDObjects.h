@@ -213,6 +213,7 @@ public:
 };
 
 
+// TODO: Fix offsets, "health" isn't health anymore
 class TDPlayer {
 public:
 	td::Vec3 position;			//0x000 - 0x012

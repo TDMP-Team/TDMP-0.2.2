@@ -16,11 +16,15 @@
 #include "Server.h"
 #include "Lobby.h"
 #include "Messages.h"
+#include "Player.h"
+
+#include "../Lua.h"
 
 std::string TDMP::Version = "0.9.0";
 bool TDMP::LevelLoaded = false;
 std::vector<TDBody*> TDMP::levelBodies{};
-
+std::map<int, int> TDMP::levelBodiesById{};
+TDMP::Input TDMP::localInputData;
 
 void TDMP::Init()
 {
@@ -83,6 +87,25 @@ bool TDMP::IsServer()
 void OnUnLoadLevel()
 {
 	TDMP::levelBodies.clear();
+	LUA::callbacks.clear();
+	LUA::hooks.clear();
+
+	if (TDMP::server != nullptr)
+	{
+		for (uint32 i = 0; i < TDMP::MaxPlayers; ++i)
+		{
+			if (TDMP::server->ClientData[i].Active)
+			{
+				SteamGameServerNetworkingSockets()->FlushMessagesOnConnection(TDMP::server->ClientData[i].handle);
+			}
+		}
+	}
+
+	for (uint32 i = 0; i < TDMP::MaxPlayers; ++i)
+	{
+		TDMP::players[i].hideBody = false;
+		TDMP::players[i].bodyExists = false;
+	}
 
 	TDMP::Debug::print("Level unloaded");
 }
@@ -96,7 +119,10 @@ void OnLoadLevel()
 		entityType t = body->Type;
 
 		if (t == entityType::Body || t == entityType::Vehicle)
+		{
 			TDMP::levelBodies.push_back(body);
+			TDMP::levelBodiesById[body->Id] = TDMP::levelBodies.size() - 1;
+		}
 	}
 
 	TDMP::Debug::print("Level loaded");
@@ -104,6 +130,8 @@ void OnLoadLevel()
 
 void TDMP::Tick()
 {
+	SteamAPI_RunCallbacks();
+
 	if (glb::game->m_LoadingEffect == 0) // Level is reloading
 	{
 		if (!TDMP::LevelLoaded)
@@ -123,9 +151,7 @@ void TDMP::Tick()
 		TDMP::LevelLoaded = false;
 	}
 
-	SteamAPI_RunCallbacks();
-
-	if (glb::game->State == gameState::ingame && TDMP::server == nullptr && TDMP::lobby->IsHost(SteamUser()->GetSteamID()))
+	if (glb::game->State == gameState::ingame && TDMP::server == nullptr && TDMP::lobby != nullptr && TDMP::lobby->IsHost(SteamUser()->GetSteamID()))
 	{
 		TDMP::Host();
 	}
@@ -154,6 +180,14 @@ void TDMP::LuaTick()
 {
 	if (TDMP::client != nullptr)
 		TDMP::client->LuaTick();
+	if (TDMP::server != nullptr)
+		TDMP::server->LuaTick();
+}
+
+void TDMP::LuaUpdate()
+{
+	if (TDMP::server != nullptr)
+		TDMP::server->LuaUpdate();
 }
 
 void TDMP::SetGameState(int state)
