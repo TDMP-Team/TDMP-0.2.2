@@ -232,9 +232,9 @@ public:
 	byte isAttackingSecondary;
 	byte isAttackingPadding;
 	byte isAttacking;			//0x0EA - 0x0EB
-	byte paddingF[0x70];		//0x0EB - 0x154
+	byte paddingF[0x74];		//0x0EB - 0x154
 	float health;				//0x15C - 0x160
-	byte paddingG[0x488];		//0x160 - 0x418
+	byte paddingG[0x484];		//0x160 - 0x418
 	char heldItemName[13];		//0x3CB - 0x3D8
 
 	td::Vec3 cameraEuler() {

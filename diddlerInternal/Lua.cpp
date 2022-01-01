@@ -390,7 +390,11 @@ void pushplayer(lua_State* L, int plyId)
 	settable(L, -3);
 
 	pushstring(L, "hp");
-	lua_pushinteger(L, ply.hp);
+	lua_pushnumber(L, ply.hp);
+	settable(L, -3);
+
+	pushstring(L, "heldItem");
+	pushstring(L, ply.heldItem.c_str());
 	settable(L, -3);
 
 	if (ply.currentVehicle != 0)
@@ -529,6 +533,7 @@ void GetPlayers(CScriptCore* pSC, lua_State* L, int* ret)
 	for (uint32 i = 0; i < TDMP::MaxPlayers; ++i)
 	{
 		TDMP::Player ply = TDMP::players[i];
+	
 		if (ply.Active)
 		{
 			lua_pushinteger(L, ++k);
@@ -576,6 +581,23 @@ void GetNick(CScriptCore* pSC, lua_State* L, int* ret)
 	}
 
 	pushstring(L, SteamFriends()->GetPlayerNickname(TDMP::players[id].SteamId));
+
+	(*ret) = 1;
+}
+
+void GetHeldItem(CScriptCore* pSC, lua_State* L, int* ret)
+{
+	int id = luaL_checkinteger(L, 1);
+	lua_pop(L, lua_gettop(L));
+
+	if (id > TDMP::MaxPlayers - 1 || id < 0)
+	{
+		glb::oluaL_error(L, "incorrect id (must be 0-%d)", TDMP::MaxPlayers - 1);
+
+		return;
+	}
+
+	pushstring(L, TDMP::players[id].heldItem.c_str());
 
 	(*ret) = 1;
 }
