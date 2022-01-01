@@ -145,6 +145,9 @@ void TDMP::Server::LuaTick()
 
 void TDMP::Server::LuaUpdate()
 {
+	if (!TDMP::LevelLoaded)
+		return;
+
 	int bodiesId = 0;
 	int packs = 0;
 
@@ -293,7 +296,7 @@ void TDMP::Server::ReceiveNetData()
 					// but this mod would be used by friends so we don't really need to use anti-exploit/cheat things here?
 
 					MsgPlayerData msg;
-					msg.SetPlayer(client.SteamIDUser, pMsg->GetPosition(), pMsg->GetRotation(), pMsg->GetCamPosition(), pMsg->GetCamRotation(), pMsg->GetVehicle(), pMsg->GetHealth(), pMsg->GetCtrl());
+					msg.SetPlayer(client.SteamIDUser, pMsg->GetPosition(), pMsg->GetRotation(), pMsg->GetCamPosition(), pMsg->GetCamRotation(), pMsg->GetVehicle(), pMsg->GetHealth(), pMsg->GetCtrl(), pMsg->GetHeldItem());
 
 					server->BroadcastData(&msg, sizeof(msg), k_nSteamNetworkingSend_Unreliable);
 					TDMP::client->HandlePlayerData(&msg, &connection);

@@ -123,6 +123,25 @@ void TDMP::Client::LuaTick()
 
 		clientCallbackQueue.clear();
 	}
+
+	int bodies = bodyQueue.size();
+	if (bodies > 0)
+	{
+		for (size_t i = 0; i < bodies; i++)
+		{
+			TDBody* body = TDMP::levelBodies[levelBodiesById[bodyQueue[i].id]];
+
+			body->isAwake = true;
+			body->countDown = 0x0F;
+
+			body->Position = bodyQueue[i].pos;
+			body->Rotation = bodyQueue[i].rot;
+			body->Velocity = bodyQueue[i].vel;
+			body->RotationVelocity = bodyQueue[i].rotVel;
+		}
+
+		bodyQueue.clear();
+	}
 }
 
 void TDMP::Client::Tick()
@@ -229,6 +248,8 @@ void TDMP::Client::HandlePlayerData(MsgPlayerData* pData, HSteamNetConnection* c
 			players[i].CamRotation = pData->GetCamRotation();
 
 			players[i].hp = pData->GetHealth();
+			players[i].isCtrlPressed = pData->GetCtrl();
+			players[i].heldItem = std::string(pData->GetHeldItem());
 
 			// welocme to the hell
 			MsgVehicle v = pData->GetVehicle();
@@ -279,6 +300,7 @@ void TDMP::Client::HandlePlayerData(MsgPlayerData* pData, HSteamNetConnection* c
 
 		players[found].hp = pData->GetHealth();
 		players[found].isCtrlPressed = pData->GetCtrl();
+		players[found].heldItem = std::string(pData->GetHeldItem());
 
 		players[found].Active = true;
 		players[found].bodyExists = false;
@@ -291,6 +313,7 @@ void TDMP::Client::HandlePlayerData(MsgPlayerData* pData, HSteamNetConnection* c
 
 void TDMP::Client::HandleData(EMessage eMsg, SteamNetworkingMessage_t* message)
 {
+
 	uint32 cubMsgSize = message->GetSize();
 
 	switch (eMsg)
@@ -334,7 +357,15 @@ void TDMP::Client::HandleData(EMessage eMsg, SteamNetworkingMessage_t* message)
 		{
 			if (levelBodiesById.count(pMsg->GetBodies()[i].id))
 			{
-				TDBody* body = TDMP::levelBodies[levelBodiesById[pMsg->GetBodies()[i].id]];
+				TDMP::bodyQueue.push_back(MsgBody{
+					pMsg->GetBodies()[i].pos,
+					pMsg->GetBodies()[i].rot,
+					pMsg->GetBodies()[i].vel,
+					pMsg->GetBodies()[i].rotVel,
+
+					pMsg->GetBodies()[i].id
+				});
+				/*TDBody* body = TDMP::levelBodies[levelBodiesById[pMsg->GetBodies()[i].id]];
 
 				body->isAwake = true;
 				body->countDown = 0x0F;
@@ -342,7 +373,7 @@ void TDMP::Client::HandleData(EMessage eMsg, SteamNetworkingMessage_t* message)
 				body->Position = pMsg->GetBodies()[i].pos;
 				body->Rotation = pMsg->GetBodies()[i].rot;
 				body->Velocity = pMsg->GetBodies()[i].vel;
-				body->RotationVelocity = pMsg->GetBodies()[i].rotVel;
+				body->RotationVelocity = pMsg->GetBodies()[i].rotVel;*/
 			}
 		}
 
@@ -359,15 +390,14 @@ void TDMP::Client::HandleData(EMessage eMsg, SteamNetworkingMessage_t* message)
 
 		if (levelBodiesById.count(pMsg->GetBody().id))
 		{
-			TDBody* body = TDMP::levelBodies[levelBodiesById[pMsg->GetBody().id]];
+			TDMP::bodyQueue.push_back(MsgBody{
+				pMsg->GetBody().pos,
+				pMsg->GetBody().rot,
+				pMsg->GetBody().vel,
+				pMsg->GetBody().rotVel,
 
-			body->isAwake = true;
-			body->countDown = 0x0F;
-
-			body->Position = pMsg->GetBody().pos;
-			body->Rotation = pMsg->GetBody().rot;
-			body->Velocity = pMsg->GetBody().vel;
-			body->RotationVelocity = pMsg->GetBody().rotVel;
+				pMsg->GetBody().id
+			});
 		}
 
 		break;
@@ -406,21 +436,21 @@ void TDMP::Client::HandleData(EMessage eMsg, SteamNetworkingMessage_t* message)
 			Debug::print("corrupted k_EMsgClientExiting received");
 			break;
 		}
-
-		for (uint32 i = 0; i < MaxPlayers; ++i)
-		{
-			if (players[i].Active && players[i].SteamId == pMsg->GetSteamID())
+		if (TDMP::LevelLoaded)
+			for (uint32 i = 0; i < MaxPlayers; ++i)
 			{
-				Debug::print("Player " + players[i].steamIdStr + " disconnected", Env::Client);
+				if (players[i].Active && players[i].SteamId == pMsg->GetSteamID())
+				{
+					Debug::print("Player " + players[i].steamIdStr + " disconnected", Env::Client);
 
-				LUA::RunLuaHooks("PlayerDisconnected", players[i].steamIdStr.c_str());
+					LUA::RunLuaHooks("PlayerDisconnected", players[i].steamIdStr.c_str());
 
-				players[i].RemoveBodyIfExists();
-				players[i].Active = false;
+					players[i].RemoveBodyIfExists();
+					players[i].Active = false;
 
-				break;
+					break;
+				}
 			}
-		}
 
 		break;
 	}

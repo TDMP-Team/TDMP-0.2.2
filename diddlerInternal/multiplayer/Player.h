@@ -18,6 +18,7 @@ namespace TDMP
 		std::string steamIdStr;
 		// cached nickname
 		std::string nick;
+		std::string heldItem;
 
 		// id in the player table
 		int id;

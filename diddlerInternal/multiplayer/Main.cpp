@@ -20,11 +20,12 @@
 
 #include "../Lua.h"
 
-std::string TDMP::Version = "0.9.0";
+std::string TDMP::Version = "0.9.2";
 bool TDMP::LevelLoaded = false;
 std::vector<TDBody*> TDMP::levelBodies{};
 std::map<int, int> TDMP::levelBodiesById{};
 TDMP::Input TDMP::localInputData;
+std::vector<MsgBody> TDMP::bodyQueue;
 
 void TDMP::Init()
 {
@@ -86,6 +87,7 @@ bool TDMP::IsServer()
 
 void OnUnLoadLevel()
 {
+	TDMP::bodyQueue.clear();
 	TDMP::levelBodies.clear();
 	LUA::callbacks.clear();
 	LUA::hooks.clear();
