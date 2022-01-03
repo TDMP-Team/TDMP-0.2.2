@@ -241,6 +241,7 @@ void LUA::CallCallbacks(const char* callbackName)
 	}
 }
 
+// TODO: Push SteamId of sender to the server
 void LUA::CallEvent(const char* eventName, const char* jsonData)
 {
 	for (size_t i = 0; i < callbacks.size(); i++)
@@ -390,7 +391,11 @@ void pushplayer(lua_State* L, int plyId)
 	settable(L, -3);
 
 	pushstring(L, "hp");
-	lua_pushinteger(L, ply.hp);
+	lua_pushnumber(L, ply.hp);
+	settable(L, -3);
+
+	pushstring(L, "heldItem");
+	pushstring(L, ply.heldItem.c_str());
 	settable(L, -3);
 
 	if (ply.currentVehicle != 0)
@@ -529,6 +534,7 @@ void GetPlayers(CScriptCore* pSC, lua_State* L, int* ret)
 	for (uint32 i = 0; i < TDMP::MaxPlayers; ++i)
 	{
 		TDMP::Player ply = TDMP::players[i];
+	
 		if (ply.Active)
 		{
 			lua_pushinteger(L, ++k);
@@ -576,6 +582,30 @@ void GetNick(CScriptCore* pSC, lua_State* L, int* ret)
 	}
 
 	pushstring(L, SteamFriends()->GetPlayerNickname(TDMP::players[id].SteamId));
+
+	(*ret) = 1;
+}
+
+void GetLocalNick(CScriptCore* pSC, lua_State* L, int* ret)
+{
+	pushstring(L, SteamFriends()->GetFriendPersonaName(SteamUser()->GetSteamID()));
+
+	(*ret) = 1;
+}
+
+void GetHeldItem(CScriptCore* pSC, lua_State* L, int* ret)
+{
+	int id = luaL_checkinteger(L, 1);
+	lua_pop(L, lua_gettop(L));
+
+	if (id > TDMP::MaxPlayers - 1 || id < 0)
+	{
+		glb::oluaL_error(L, "incorrect id (must be 0-%d)", TDMP::MaxPlayers - 1);
+
+		return;
+	}
+
+	pushstring(L, TDMP::players[id].heldItem.c_str());
 
 	(*ret) = 1;
 }
@@ -734,8 +764,10 @@ void LUA::RegisterLuaCFunctions(CScriptCore_LuaState* pSCLS)
 	RegisterLuaFunction(pSCLS, "TDMP_GetPlayer", GetPlayer);
 	RegisterLuaFunction(pSCLS, "TDMP_GetPlayerTransform", GetPlayerTransform);
 	RegisterLuaFunction(pSCLS, "TDMP_GetPlayerCameraTransform", GetPlayerCameraTransform);
+	RegisterLuaFunction(pSCLS, "TDMP_GetPlayerBodyEnabled", GetPlayerModelEnabled);
 	RegisterLuaFunction(pSCLS, "TDMP_SetPlayerBodyEnabled", SetPlayerModelEnabled);
 
+	RegisterLuaFunction(pSCLS, "TDMP_LocalNickname", GetLocalNick);
 	RegisterLuaFunction(pSCLS, "TDMP_LocalSteamId", LocalSteamId);
 	RegisterLuaFunction(pSCLS, "TDMP_IsMe", IsMe);
 
@@ -760,7 +792,17 @@ int hluaL_loadbuffer(lua_State* L, const char* buff, size_t size, const char* na
 
 void makehole(TDScene* scene, td::Vec3* position, float damageA, float damageB, int unkn1, int* unkn2)
 {
-	
+	TDMP::Debug::print("makeHoleWrapped was called");
+
+	MsgSledgeHit msg;
+	msg.SetData(*position, damageA, damageB);
+
+	if (TDMP::server == nullptr)
+		TDMP::client->SendData(&msg, sizeof(msg), k_nSteamNetworkingSend_Reliable);
+	else
+		TDMP::server->BroadcastData(&msg, sizeof(msg), k_nSteamNetworkingSend_Reliable);
+
+	glb::oWrappedDamage(scene, position, damageA, damageB, unkn1, unkn2);
 }
 
 void LUA::HookRegisterGameFunctions()
@@ -770,10 +812,10 @@ void LUA::HookRegisterGameFunctions()
 	DetourAttach(&(PVOID&)glb::RegisterGameFunctions, hRegisterGameFunctions);
 	DetourTransactionCommit();
 
-	//DetourTransactionBegin();
-	//DetourUpdateThread(GetCurrentThread());
-	//DetourAttach(&(PVOID&)glb::oWrappedDamage, makehole);
-	//DetourTransactionCommit();
+	/*DetourTransactionBegin();
+	DetourUpdateThread(GetCurrentThread());
+	DetourAttach(&(PVOID&)glb::oWrappedDamage, makehole);
+	DetourTransactionCommit();*/
 }
 
 int CallLuaFunction(lua_State* L) {

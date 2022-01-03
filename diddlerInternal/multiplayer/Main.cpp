@@ -20,11 +20,12 @@
 
 #include "../Lua.h"
 
-std::string TDMP::Version = "0.9.0";
+std::string TDMP::Version = "0.9.2";
 bool TDMP::LevelLoaded = false;
 std::vector<TDBody*> TDMP::levelBodies{};
 std::map<int, int> TDMP::levelBodiesById{};
 TDMP::Input TDMP::localInputData;
+std::vector<MsgBody> TDMP::bodyQueue;
 
 void TDMP::Init()
 {
@@ -34,7 +35,13 @@ void TDMP::Init()
 
 	if (SteamAPI_Init())
 	{
-		Debug::print("Steam's API was initialized");
+		Debug::print("Steam's API was initialized(" + std::to_string(SteamUser()->GetSteamID().ConvertToUint64()) + ")");
+
+		const DWORD buffSize = 65535;
+		static char buffer[buffSize];
+		GetEnvironmentVariableA("SteamAppId", buffer, buffSize);
+
+		Debug::print(buffer);
 		
 		new Client();
 	}
@@ -86,6 +93,7 @@ bool TDMP::IsServer()
 
 void OnUnLoadLevel()
 {
+	TDMP::bodyQueue.clear();
 	TDMP::levelBodies.clear();
 	LUA::callbacks.clear();
 	LUA::hooks.clear();

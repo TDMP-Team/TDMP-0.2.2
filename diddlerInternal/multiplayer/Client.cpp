@@ -103,6 +103,7 @@ void TDMP::Client::SendData(const void* pData, uint32 nSizeOfData, int nSendFlag
 }
 
 std::vector<LuaCallbackQueue> clientCallbackQueue;
+std::vector<MsgSledgeHit> sledgeQueue;
 void TDMP::Client::LuaTick()
 {
 	for (uint32 i = 0; i < MaxPlayers; ++i)
@@ -123,6 +124,48 @@ void TDMP::Client::LuaTick()
 
 		clientCallbackQueue.clear();
 	}
+
+	int bodies = bodyQueue.size();
+	if (bodies > 0)
+	{
+		for (size_t i = 0; i < bodies; i++)
+		{
+			TDBody* body = TDMP::levelBodies[levelBodiesById[bodyQueue[i].id]];
+
+			body->isAwake = true;
+			body->countDown = 0x0F;
+
+			body->Position = bodyQueue[i].pos;
+			body->Rotation = bodyQueue[i].rot;
+			body->Velocity = bodyQueue[i].vel;
+			body->RotationVelocity = bodyQueue[i].rotVel;
+		}
+
+		bodyQueue.clear();
+	}
+
+	/*int holes = sledgeQueue.size();
+	if (holes > 0)
+	{
+		for (size_t i = 0; i < holes; i++)
+		{
+			td::Vec3* pos = new td::Vec3{};
+			pos->x = sledgeQueue[i].GetPos().x;
+			pos->y = sledgeQueue[i].GetPos().y;
+			pos->y = sledgeQueue[i].GetPos().z;
+
+			int* smth;
+			smth = 0;
+
+			glb::oWrappedDamage(glb::scene, pos, sledgeQueue[i].GetDamageA(), sledgeQueue[i].GetDamageB(), 0, smth);
+
+			delete pos;
+			delete smth;
+
+			//std::string vec = "[" + std::to_string(sledgeQueue[i].GetPos().x) + "," + std::to_string(sledgeQueue[i].GetPos().y) + std::to_string(sledgeQueue[i].GetPos().z) + "]";
+			//LUA::RunLuaHooks("SledgeDamage", (std::string("[") + vec + "," + std::to_string(sledgeQueue[i].GetDamageA()) + "]").c_str());
+		}
+	}*/
 }
 
 void TDMP::Client::Tick()
@@ -229,6 +272,8 @@ void TDMP::Client::HandlePlayerData(MsgPlayerData* pData, HSteamNetConnection* c
 			players[i].CamRotation = pData->GetCamRotation();
 
 			players[i].hp = pData->GetHealth();
+			players[i].isCtrlPressed = pData->GetCtrl();
+			players[i].heldItem = std::string(pData->GetHeldItem());
 
 			// welocme to the hell
 			MsgVehicle v = pData->GetVehicle();
@@ -279,10 +324,13 @@ void TDMP::Client::HandlePlayerData(MsgPlayerData* pData, HSteamNetConnection* c
 
 		players[found].hp = pData->GetHealth();
 		players[found].isCtrlPressed = pData->GetCtrl();
+		players[found].heldItem = std::string(pData->GetHeldItem());
 
 		players[found].Active = true;
 		players[found].bodyExists = false;
 		players[found].hideBody = false;
+
+		LUA::RunLuaHooks("PlayerConnected", players[found].steamIdStr.c_str());
 
 		if (conn != nullptr)
 			players[found].conn = (HSteamNetConnection)conn;
@@ -291,6 +339,7 @@ void TDMP::Client::HandlePlayerData(MsgPlayerData* pData, HSteamNetConnection* c
 
 void TDMP::Client::HandleData(EMessage eMsg, SteamNetworkingMessage_t* message)
 {
+
 	uint32 cubMsgSize = message->GetSize();
 
 	switch (eMsg)
@@ -334,7 +383,15 @@ void TDMP::Client::HandleData(EMessage eMsg, SteamNetworkingMessage_t* message)
 		{
 			if (levelBodiesById.count(pMsg->GetBodies()[i].id))
 			{
-				TDBody* body = TDMP::levelBodies[levelBodiesById[pMsg->GetBodies()[i].id]];
+				TDMP::bodyQueue.push_back(MsgBody{
+					pMsg->GetBodies()[i].pos,
+					pMsg->GetBodies()[i].rot,
+					pMsg->GetBodies()[i].vel,
+					pMsg->GetBodies()[i].rotVel,
+
+					pMsg->GetBodies()[i].id
+				});
+				/*TDBody* body = TDMP::levelBodies[levelBodiesById[pMsg->GetBodies()[i].id]];
 
 				body->isAwake = true;
 				body->countDown = 0x0F;
@@ -342,9 +399,22 @@ void TDMP::Client::HandleData(EMessage eMsg, SteamNetworkingMessage_t* message)
 				body->Position = pMsg->GetBodies()[i].pos;
 				body->Rotation = pMsg->GetBodies()[i].rot;
 				body->Velocity = pMsg->GetBodies()[i].vel;
-				body->RotationVelocity = pMsg->GetBodies()[i].rotVel;
+				body->RotationVelocity = pMsg->GetBodies()[i].rotVel;*/
 			}
 		}
+
+		break;
+	}
+	case k_EMsgPlayerSledgeHit:
+	{
+		MsgSledgeHit* pMsg = (MsgSledgeHit*)message->GetData();
+		if (pMsg == nullptr)
+		{
+			Debug::print("corrupted k_EMsgPlayerSledgeHit received");
+			break;
+		}
+
+		sledgeQueue.push_back(*pMsg);
 
 		break;
 	}
@@ -359,15 +429,14 @@ void TDMP::Client::HandleData(EMessage eMsg, SteamNetworkingMessage_t* message)
 
 		if (levelBodiesById.count(pMsg->GetBody().id))
 		{
-			TDBody* body = TDMP::levelBodies[levelBodiesById[pMsg->GetBody().id]];
+			TDMP::bodyQueue.push_back(MsgBody{
+				pMsg->GetBody().pos,
+				pMsg->GetBody().rot,
+				pMsg->GetBody().vel,
+				pMsg->GetBody().rotVel,
 
-			body->isAwake = true;
-			body->countDown = 0x0F;
-
-			body->Position = pMsg->GetBody().pos;
-			body->Rotation = pMsg->GetBody().rot;
-			body->Velocity = pMsg->GetBody().vel;
-			body->RotationVelocity = pMsg->GetBody().rotVel;
+				pMsg->GetBody().id
+			});
 		}
 
 		break;
@@ -406,21 +475,21 @@ void TDMP::Client::HandleData(EMessage eMsg, SteamNetworkingMessage_t* message)
 			Debug::print("corrupted k_EMsgClientExiting received");
 			break;
 		}
-
-		for (uint32 i = 0; i < MaxPlayers; ++i)
-		{
-			if (players[i].Active && players[i].SteamId == pMsg->GetSteamID())
+		if (TDMP::LevelLoaded)
+			for (uint32 i = 0; i < MaxPlayers; ++i)
 			{
-				Debug::print("Player " + players[i].steamIdStr + " disconnected", Env::Client);
+				if (players[i].Active && players[i].SteamId == pMsg->GetSteamID())
+				{
+					Debug::print("Player " + players[i].steamIdStr + " disconnected", Env::Client);
 
-				LUA::RunLuaHooks("PlayerDisconnected", players[i].steamIdStr.c_str());
+					LUA::RunLuaHooks("PlayerDisconnected", players[i].steamIdStr.c_str());
 
-				players[i].RemoveBodyIfExists();
-				players[i].Active = false;
+					players[i].RemoveBodyIfExists();
+					players[i].Active = false;
 
-				break;
+					break;
+				}
 			}
-		}
 
 		break;
 	}

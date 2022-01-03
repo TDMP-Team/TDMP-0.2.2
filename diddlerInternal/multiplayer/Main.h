@@ -7,6 +7,8 @@
 
 #include "../Global.h"
 
+struct MsgBody;
+
 namespace TDMP
 {
     /// <summary>
@@ -34,6 +36,11 @@ namespace TDMP
     /// [BodyId] = id in levelBodies
     /// </summary>
     extern std::map<int, int> levelBodiesById;
+
+    /// <summary>
+    /// Used for applying received data inside game's loop
+    /// </summary>
+    extern std::vector<MsgBody> bodyQueue;
 
     /// <summary>
     /// Used for the vehicle input sync

@@ -35,6 +35,7 @@ enum EMessage
 
 	// Player data
 	k_EMsgPlayerTransform = k_EMsgServerBegin + 20,
+	k_EMsgPlayerSledgeHit = k_EMsgServerBegin + 221,
 
 	// P2P authentication messages
 	k_EMsgP2PBegin = 600,
@@ -95,7 +96,7 @@ struct MsgPlayerData
 	MsgPlayerData() : m_dwMessageType(LittleDWord(k_EMsgPlayerTransform)) {}
 	DWORD GetMessageType() { return LittleDWord(m_dwMessageType); }
 
-	void SetPlayer(CSteamID steamid, td::Vec3 position, td::Vec4 rotation, td::Vec3 camPosition, td::Vec4 camRotation, MsgVehicle vehicle, float hp, bool ctrl)
+	void SetPlayer(CSteamID steamid, td::Vec3 position, td::Vec4 rotation, td::Vec3 camPosition, td::Vec4 camRotation, MsgVehicle vehicle, float hp, bool ctrl, const char* heldItemName)
 	{
 		id = LittleQWord(steamid.ConvertToUint64());
 		pos = position;
@@ -105,6 +106,7 @@ struct MsgPlayerData
 		curVeh = vehicle;
 		this->hp = hp;
 		this->ctrl = ctrl;
+		strncpy(heldItem, heldItemName, 13);
 	}
 
 	void SetPlayer(td::Vec3 position, td::Vec4 rotation, td::Vec3 camPosition, td::Vec4 camRotation)
@@ -128,8 +130,9 @@ struct MsgPlayerData
 			curVeh.id = glb::scene->m_CurrentVehicle->Id;
 		}
 
-		hp = 1;
-		//hp = glb::player->health;
+		hp = glb::player->health;
+		strncpy(heldItem, glb::player->heldItemName, 13);
+
 		ctrl = TDMP::localInputData.Ctrl;
 	}
 
@@ -139,6 +142,7 @@ struct MsgPlayerData
 	const bool GetCtrl() const { return ctrl; }
 
 	const uint64& GetSteamID() const { return LittleQWord(id); }
+	const char* GetHeldItem() const { return heldItem; }
 
 	const td::Vec3& GetPosition() const { return pos; }
 	const td::Vec4& GetRotation() const { return rot; }
@@ -154,6 +158,7 @@ private:
 	MsgVehicle curVeh;
 	float hp;
 	bool ctrl;
+	char heldItem[13];
 };
 
 struct LuaCallbackQueue
@@ -235,6 +240,40 @@ private:
 	const DWORD m_dwMessageType;
 
 	MsgBody bodyData;
+};
+
+struct MsgSledgeHit {
+	MsgSledgeHit() : m_dwMessageType(LittleDWord(k_EMsgPlayerSledgeHit)) {}
+	DWORD GetMessageType() { return LittleDWord(m_dwMessageType); }
+
+	void SetData(td::Vec3 pos, float damageA, float damageB)
+	{
+		this->pos = pos;
+
+		this->damageA = damageA;
+		this->damageB = damageB;
+	}
+
+	float GetDamageA()
+	{
+		return damageA;
+	}
+
+	float GetDamageB()
+	{
+		return damageB;
+	}
+
+	td::Vec3 GetPos()
+	{
+		return pos;
+	}
+private:
+	const DWORD m_dwMessageType;
+
+	float damageA;
+	float damageB;
+	td::Vec3 pos;
 };
 
 // My attempts to send vector with bodies
