@@ -162,21 +162,9 @@ void TDMP::Client::LuaTick()
 
 		sledgeQueue.clear();
 	}
-}
-
-void TDMP::Client::Tick()
-{
-	SteamNetworkingSockets()->RunCallbacks();
 
 	if (serverHandle == k_HSteamNetConnection_Invalid)
 		return;
-
-	// We need to receieve amy data evem of we're in main menu
-	ReceiveNetData();
-	
-	if (glb::game->State != gameState::ingame)
-		return;
-
 	// Player's transform sync
 
 	MsgPlayerData msg;
@@ -192,6 +180,20 @@ void TDMP::Client::Tick()
 	msg.SetPlayer(glb::player->position, finalRot, glb::player->cameraPosition, glb::player->cameraQuat);
 
 	client->SendData(&msg, sizeof(msg), k_nSteamNetworkingSend_Unreliable);
+}
+
+void TDMP::Client::Tick()
+{
+	SteamNetworkingSockets()->RunCallbacks();
+
+	if (serverHandle == k_HSteamNetConnection_Invalid)
+		return;
+
+	// We need to receieve amy data evem of we're in main menu
+	ReceiveNetData();
+	
+	if (glb::game->State != gameState::ingame)
+		return;
 }
 
 void TDMP::Client::Frame()
