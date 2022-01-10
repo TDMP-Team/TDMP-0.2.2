@@ -819,6 +819,7 @@ void RegisterTool(CScriptCore* pSC, lua_State*& L, CRetInfo* ret)
 {
 	const char* tool = luaL_checkstring(L, 1);
 	const char* path = luaL_checkstring(L, 2);
+	lua_pop(L, 2);
 
 	std::string luaPath = std::string(path);
 	std::string realPath = std::string(pSC->m_ScriptLocation.c_str()) + luaPath.substr(3, luaPath.size());
@@ -883,11 +884,35 @@ void GetLobbyMembers(CScriptCore* pSC, lua_State*& L, CRetInfo* ret)
 	ret->retCount = 1;
 }
 
+float clamp(float n, float lower, float upper) {
+	return std::max(lower, std::min(n, upper));
+}
+
+void SpawnVox(CScriptCore* pSC, lua_State*& L, CRetInfo* ret)
+{
+	const char* path = luaL_checkstring(L, 1);
+	float scale = luaL_checknumber(L, 2);
+	lua_pop(L, 2);
+
+	std::string luaPath = std::string(path);
+	std::string realPath = std::string(pSC->m_ScriptLocation.c_str()) + luaPath.substr(3, luaPath.size());
+
+	spawner::freeObjectSpawnParams params = {};
+	params.useUserRotation = false;
+
+	spawner::spawnedObject body;
+	spawner::spawnFreeEntity(path, params, &body, clamp(scale, 0.1f, 3.f));
+
+	lua_pushnumber(L, body.body->Id);
+
+	ret->retCount = 1;
+}
+
 void LUA::RegisterLuaCFunctions(CScriptCore_LuaState* pSCLS)
 {
 	hookQueue[(int)*pSCLS->m_LuaState] = std::vector<callHook>{};
 
-
+	RegisterLuaFunction(pSCLS, "TDMP_SpawnVox", SpawnVox);
 	RegisterLuaFunction(pSCLS, "TDMP_RegisterToolVox", RegisterTool);
 
 	RegisterLuaFunction(pSCLS, "TDMP_GetLobbyMembers", GetLobbyMembers);
