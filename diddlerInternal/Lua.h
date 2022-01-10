@@ -31,5 +31,6 @@ namespace LUA
 
 	void RunLuaHooks(const char* hookName, const char* jsonData);
 	void CallCallbacks(const char* callbackName);
-	void CallEvent(const char* eventName, const char* jsonData);
+	void CallEvent(const char* eventName, const char* jsonData, std::string steamId = "");
+	std::string GetToolPath(std::string toolName);
 }

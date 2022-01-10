@@ -788,11 +788,11 @@ namespace spawner {
 
         return object;
     }
-    bool spawnFreeEntity(std::string filepath, freeObjectSpawnParams params, spawnedObject* object) {
-        if (!exists(filepath)) {
+    bool spawnFreeEntity(std::string filepath, freeObjectSpawnParams params, spawnedObject* object, float scale) {
+        /*if (!exists(filepath)) {
             std::cout << "[E] no file" << std::endl;
             return false;
-        }
+        }*/
 
         uintptr_t uBODY = glb::oTMalloc(0x232u);
         TDBody* BODY = (TDBody*)uBODY;
@@ -817,7 +817,7 @@ namespace spawner {
             TDShape* SHAPE = (TDShape*)uSHAPE;
 
             glb::oS_Constructor(uSHAPE, uBODY);
-            uintptr_t VOX = glb::oSpawnVox(&file_path, &sub_path, voxScale);
+            uintptr_t VOX = glb::oSpawnVox(&file_path, &sub_path, scale);
 
             glb::oCreateTexture(VOX);
             glb::oCreatePhysics(VOX);

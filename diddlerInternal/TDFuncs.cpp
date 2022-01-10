@@ -21,6 +21,19 @@ void hLog(td::small_string* msg)
     printf_s("[Game Log] %s\n", msg->c_str());
 }
 
+void* test(CScriptCore* special, td::small_string* outPath, td::small_string* pathLua)
+{
+    //printf_s("LUA path: %s\n", pathLua->c_str());
+    if (std::string(pathLua->c_str()) == std::string("MOD/vox/minigun.vox"))
+    {
+        printf_s("Script Address: %s\n", pathLua->c_str());
+    }
+    td::small_string* ptr = glb::oConvertPath(special, outPath, pathLua);
+    //printf_s("REAL path: %s\n", outPath->c_str());
+
+    return ptr;
+}
+
 void sigscanItems() {
     //glb::oTdDelBdy = (deleteBody)mem::FindPattern((PBYTE)"\x48\x83\xEC\x28\x48\x8B\xCA\x33\xD2\xE8\x82\x16\x0F\x00\x48\x8B", "xxxxxxxxxxxxxxxx", GetModuleHandle(NULL), &percentage);
     //glb::oMakeHole = (makeHole)mem::FindPattern((PBYTE)"\x48\x8B\xC4\x53\x48\x81\xEC\x90\x00\x00\x00\x0F\x29\x70\xE8\x4C\x8D\x40\xA8\x48\x8B\xDA\x0F\x29\x78\xD8\x44\x0F\x29\x40\xC8\x48", "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx", GetModuleHandle(NULL), &percentage);
@@ -288,7 +301,7 @@ void sigscanItems() {
     printIntegPercentage(percentage);
     if (!glb::RegisterGameFunctions) { sigScanError = true; }
 
-    glb::tdRegisterLuaFunction = (tRegisterLuaFunction)mem::FindPattern((PBYTE)"\xE8\x00\x00\x00\x00\x90\x48\x8D\x4D\xE8\xE8\x00\x00\x00\x00\x48\x8B\x5C\x24\x00", "x????xxxxxx????xxxx?", GetModuleHandle(NULL), &percentage);
+    glb::tdRegisterLuaFunction = (tRegisterLuaFunction)mem::FindPattern((PBYTE)"\x48\x89\x5C\x24\x00\x57\x48\x83\xEC\x20\x48\x8B\xF9\x48\x8B\xDA\x48\x8B\x49\x38\x49\x8B\xD0\x48\x8B\x09\xE8\x00\x00\x00\x00", "xxxx?xxxxxxxxxxxxxxxxxxxxxx????", GetModuleHandle(NULL), &percentage);
     printf_s("tdRegisterLuaFunction           : %p", glb::tdRegisterLuaFunction);
     printIntegPercentage(percentage);
     if (!glb::tdRegisterLuaFunction) { sigScanError = true; }
@@ -348,6 +361,16 @@ void sigscanItems() {
     printIntegPercentage(percentage);
     if (!glb::olua_index2adr) { sigScanError = true; }
 
+    glb::oConvertPath = (convertPath)mem::FindPattern((PBYTE)"\x48\x8B\xC4\x55\x48\x8D\x68\xA1\x48\x81\xEC\x00\x00\x00\x00\x48\xC7\x45\x00\x00\x00\x00\x00\x48\x89\x58\x08\x48\x89\x70\x10\x48\x89\x78\x18\x4C\x89\x70\x20\x49\x8B\xF8", "xxxxxxxxxxx????xxx?????xxxxxxxxxxxxxxxxxxx", GetModuleHandle(NULL), &percentage);
+    printf_s("oConvertPath           : %p", glb::oConvertPath);
+    printIntegPercentage(percentage);
+    if (!glb::oConvertPath) { sigScanError = true; }
+
+    glb::oHasTag = (tHasTag)mem::FindPattern((PBYTE)"\x48\x89\x5C\x24\x00\x48\x89\x6C\x24\x00\x48\x89\x74\x24\x00\x48\x89\x7C\x24\x00\x41\x56\x48\x83\xEC\x20\xF6\x41\x0A\x01\x4C\x8B\xF2\x48\x8B\xE9\x74\x5B", "xxxx?xxxx?xxxx?xxxx?xxxxxxxxxxxxxxxxxx", GetModuleHandle(NULL), &percentage);
+    printf_s("oHasTag           : %p", glb::oHasTag);
+    printIntegPercentage(percentage);
+    if (!glb::oHasTag) { sigScanError = true; }
+
     DWORD64 Log = mem::FindPattern((PBYTE)"\x80\x79\x0F\x00\x74\x03\x48\x8B\x09\x48\x8B\xD1\x48\x8D\x0D\x00\x00\x00\x00", "xxxxxxxxxxxxxxx????", GetModuleHandle(NULL), &percentage);
     printf_s("Log           : %p", &Log);
     printIntegPercentage(percentage);
@@ -358,6 +381,11 @@ void sigscanItems() {
         DetourAttach(&(PVOID&)Log, hLog);
         DetourTransactionCommit();
     }
+
+    //DetourTransactionBegin();
+    //DetourUpdateThread(GetCurrentThread());
+    //DetourAttach(&(PVOID&)glb::oConvertPath, test);
+    //DetourTransactionCommit();
 
     if (sigScanError) {
         std::cout << "[F] FAILED TO FIND A CRITICAL FUNCTION, EXPECT ISSUES" << std::endl;

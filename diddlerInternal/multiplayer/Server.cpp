@@ -159,9 +159,27 @@ void TDMP::Server::LuaUpdate()
 		if (body == 0)
 			continue;
 
+		if (glb::oHasTag(body, td::small_string("nosync")))
+		{
+			Debug::print(std::to_string(body->Id) + " has nosync tag, skipping!");
+
+			continue;
+		}
+
+		// This is needed for sending currently grabbed body only once without any brainfuck or addditional "ifs"
+		if (glb::player->grabbedBody == body)
+		{
+			MsgUpdateBody oneBody;
+
+			oneBody.SetBody(body);
+			server->BroadcastData(&oneBody, sizeof(oneBody), k_nSteamNetworkingSend_Unreliable);
+
+			continue;
+		}
+
 		float len = pow(body->Velocity.x, 2) + pow(body->Velocity.y, 2) + pow(body->Velocity.z, 2);
 
-		if (len == 0 || len <= 0.008f)
+		if (len == 0 || len <= 0.005f)
 			continue;
 
 		// Game crashes when trying to access `VoxelCount` of a vehicle
@@ -186,7 +204,7 @@ void TDMP::Server::LuaUpdate()
 		bodiesId++;
 
 		// if next body would reach limit of packet
-		if (bodiesId + 1 >= 24)
+		if (bodiesId + 1 >= 40)
 		{
 			server->BroadcastData(&msg, sizeof(msg), k_nSteamNetworkingSend_Unreliable); // then send it
 
@@ -285,7 +303,10 @@ void TDMP::Server::ReceiveNetData()
 				break;
 			}
 
-			server->BroadcastData(pMsg, sizeof(pMsg), k_nSteamNetworkingSend_Unreliable, true);
+			MsgSledgeHit msg;
+			msg.SetData(pMsg->GetPos(), pMsg->GetDamageA(), pMsg->GetDamageB());
+
+			server->BroadcastData(&msg, sizeof(msg), k_nSteamNetworkingSend_Unreliable, true);
 
 			break;
 		}
@@ -298,24 +319,28 @@ void TDMP::Server::ReceiveNetData()
 				break;
 			}
 
-			// I'm not sure if it's the best way of doing it
-			for (uint32 i = 0; i < MaxPlayers; ++i)
+			// Here we're setting steamid of client which sent to us information about him. We can also make it here sending position from server's side (Like if we were simulating player movement on serverside),
+			// but this mod would be used by friends so we don't really need to use anti-exploit/cheat things here?
+
+			// looks terrible i know
+			MsgPlayerData msg;
+			msg.SetPlayer(steamID, pMsg->GetPosition(), pMsg->GetRotation(), pMsg->GetCamPosition(), pMsg->GetCamRotation(),
+				pMsg->GetVehicle(), pMsg->GetHealth(), pMsg->GetCtrl(), pMsg->GetHeldItem(), pMsg->ToolExists(), pMsg->GetToolPosition(), pMsg->GetToolRotation());
+
+			if (pMsg->GetGrabbed().id != 0 && TDMP::levelBodiesById.count(pMsg->GetGrabbed().id))
 			{
-				ClientConnectionData_t client = ClientData[i];
-				if (client.Active && client.handle == connection)
-				{
-					// Here we're setting steamid of client which sent to us information about him. We can also make it here sending position from server's side (Like if we were simulating player movement on serverside),
-					// but this mod would be used by friends so we don't really need to use anti-exploit/cheat things here?
+				TDMP::bodyQueue.push_back(MsgBody{
+					pMsg->GetGrabbed().pos,
+					pMsg->GetGrabbed().rot,
+					pMsg->GetGrabbed().vel,
+					pMsg->GetGrabbed().rotVel,
 
-					MsgPlayerData msg;
-					msg.SetPlayer(client.SteamIDUser, pMsg->GetPosition(), pMsg->GetRotation(), pMsg->GetCamPosition(), pMsg->GetCamRotation(), pMsg->GetVehicle(), pMsg->GetHealth(), pMsg->GetCtrl(), pMsg->GetHeldItem());
-
-					server->BroadcastData(&msg, sizeof(msg), k_nSteamNetworkingSend_Unreliable);
-					TDMP::client->HandlePlayerData(&msg, &connection);
-
-					break;
-				}
+					pMsg->GetGrabbed().id
+					});
 			}
+
+			server->BroadcastData(&msg, sizeof(msg), k_nSteamNetworkingSend_Unreliable);
+			TDMP::client->HandlePlayerData(&msg, &connection);
 
 			break;
 		}
@@ -329,7 +354,7 @@ void TDMP::Server::ReceiveNetData()
 			}
 
 			// pcall must be called from game loop
-			callbackQueue.push_back(LuaCallbackQueue{ std::string(pMsg->GetCallback()), std::string(pMsg->GetJson()) });
+			callbackQueue.push_back(LuaCallbackQueue{ std::string(pMsg->GetCallback()), std::string(pMsg->GetJson()), std::to_string(steamID.ConvertToUint64()), pMsg->GetJsonLength() });
 
 			break;
 		}
@@ -342,7 +367,7 @@ void TDMP::Server::ReceiveNetData()
 			}
 			MsgClientBeginAuthentication* pMsg = (MsgClientBeginAuthentication*)message->GetData();
 
-			OnClientBeginAuthentication(pMsg->GetSteamID(), connection, (void*)pMsg->GetTokenPtr(), pMsg->GetTokenLen());
+			OnClientBeginAuthentication(steamID, connection, (void*)pMsg->GetTokenPtr(), pMsg->GetTokenLen());
 		}
 		break;
 		default:

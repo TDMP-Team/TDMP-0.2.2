@@ -3,6 +3,7 @@
 #include "TDFuncs.h"
 #include "maths.h"
 #include "glm/gtc/quaternion.hpp"
+#include "td_memory.h"
 
 //thanks nahu for the entity structures
 
@@ -61,8 +62,8 @@ public:
 	entityType	Type;			//0x08
 	int8_t		Flags;			//0x09
 	char		pad_000A[2]; //0x000A
-	int16_t		Id; //0x000C
-	char		pad_000E[2];	//0x0E
+	int		Id; //0x000C
+	//char		pad_000E[2];	//0x0E
 	Entity* pParent;		//0x10
 	Entity* pSibling;		//0x18
 	Entity* pChild;			//0x20
@@ -232,10 +233,14 @@ public:
 	byte isAttackingSecondary;
 	byte isAttackingPadding;
 	byte isAttacking;			//0x0EA - 0x0EB
-	byte paddingF[0x74];		//0x0EB - 0x154
+	byte padding[0x28];
+	TDBody* grabbedBody;
+	byte paddingF[0x4C - 0x04 - 8];		//0x0EB - 0x154
+	//byte paddingF[0x74];
 	float health;				//0x15C - 0x160
 	byte paddingG[0x484];		//0x160 - 0x418
 	char heldItemName[13];		//0x3CB - 0x3D8
+	TDBody* toolBody;
 
 	td::Vec3 cameraEuler() {
 		float vecX = -(2 * (cameraQuat.w * cameraQuat.y + cameraQuat.z * cameraQuat.x));

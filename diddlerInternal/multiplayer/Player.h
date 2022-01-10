@@ -19,11 +19,15 @@ namespace TDMP
 		// cached nickname
 		std::string nick;
 		std::string heldItem;
+		std::string lastItem;
 
 		// id in the player table
 		int id;
 
 		HSteamNetConnection conn; // available only on server
+
+		td::Vec3 ToolPosition;
+		td::Vec4 ToolRotation;
 
 		td::Vec3 Position;
 		td::Vec4 Rotation;
@@ -34,6 +38,9 @@ namespace TDMP
 		bool hideBody;
 		bool bodyExists;
 		spawner::spawnedObject body;
+
+		bool toolBodyExists;
+		spawner::spawnedObject toolBody;
 
 		TDVehicle* currentVehicle;
 		MsgVehicle vehicleInput;

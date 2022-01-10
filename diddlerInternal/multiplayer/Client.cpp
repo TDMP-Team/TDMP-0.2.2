@@ -4,6 +4,7 @@
 #include "Player.h"
 #include <thread>
 #include <Windows.h>
+#include <sstream>
 
 #include "../drawCube.h"
 #include "../objectSpawner.h"
@@ -131,6 +132,8 @@ void TDMP::Client::LuaTick()
 		for (size_t i = 0; i < bodies; i++)
 		{
 			TDBody* body = TDMP::levelBodies[levelBodiesById[bodyQueue[i].id]];
+			if (body == glb::player->grabbedBody)
+				continue;
 
 			body->isAwake = true;
 			body->countDown = 0x0F;
@@ -144,44 +147,41 @@ void TDMP::Client::LuaTick()
 		bodyQueue.clear();
 	}
 
-	/*int holes = sledgeQueue.size();
+	int holes = sledgeQueue.size();
 	if (holes > 0)
 	{
 		for (size_t i = 0; i < holes; i++)
 		{
-			td::Vec3* pos = new td::Vec3{};
-			pos->x = sledgeQueue[i].GetPos().x;
-			pos->y = sledgeQueue[i].GetPos().y;
-			pos->y = sledgeQueue[i].GetPos().z;
+			td::Vec3 pos{};
+			pos.x = sledgeQueue[i].GetPos().x;
+			pos.y = sledgeQueue[i].GetPos().y;
+			pos.z = sledgeQueue[i].GetPos().z;
 
-			int* smth;
-			smth = 0;
-
-			glb::oWrappedDamage(glb::scene, pos, sledgeQueue[i].GetDamageA(), sledgeQueue[i].GetDamageB(), 0, smth);
-
-			delete pos;
-			delete smth;
-
-			//std::string vec = "[" + std::to_string(sledgeQueue[i].GetPos().x) + "," + std::to_string(sledgeQueue[i].GetPos().y) + std::to_string(sledgeQueue[i].GetPos().z) + "]";
-			//LUA::RunLuaHooks("SledgeDamage", (std::string("[") + vec + "," + std::to_string(sledgeQueue[i].GetDamageA()) + "]").c_str());
+			glb::oWrappedDamage(glb::scene, &pos, sledgeQueue[i].GetDamageA(), sledgeQueue[i].GetDamageB(), 0, 0);
 		}
-	}*/
+
+		sledgeQueue.clear();
+	}
 }
 
 void TDMP::Client::Tick()
 {
 	SteamNetworkingSockets()->RunCallbacks();
 
-	if (serverHandle == k_HSteamNetConnection_Invalid || glb::game->State != gameState::ingame)
+	if (serverHandle == k_HSteamNetConnection_Invalid)
 		return;
 
+	// We need to receieve amy data evem of we're in main menu
 	ReceiveNetData();
+	
+	if (glb::game->State != gameState::ingame)
+		return;
 
 	// Player's transform sync
 
 	MsgPlayerData msg;
 
-	glm::quat rot(glm::vec3(0, (-glb::player->camYaw + 270), -1.57f)); //  * pi / 180.0
+	glm::quat rot(glm::vec3(0, (-glb::player->camYaw), -1.57f));
 	td::Vec4 finalRot;
 
 	finalRot.x = rot.x;
@@ -275,6 +275,12 @@ void TDMP::Client::HandlePlayerData(MsgPlayerData* pData, HSteamNetConnection* c
 			players[i].isCtrlPressed = pData->GetCtrl();
 			players[i].heldItem = std::string(pData->GetHeldItem());
 
+			if (pData->ToolExists())
+			{
+				players[i].ToolPosition = pData->GetToolPosition();
+				players[i].ToolRotation = pData->GetToolRotation();
+			}
+
 			// welocme to the hell
 			MsgVehicle v = pData->GetVehicle();
 			if (v.id != 0) // Player is driving a vehicle
@@ -329,6 +335,12 @@ void TDMP::Client::HandlePlayerData(MsgPlayerData* pData, HSteamNetConnection* c
 		players[found].Active = true;
 		players[found].bodyExists = false;
 		players[found].hideBody = false;
+
+		if (pData->ToolExists())
+		{
+			players[found].ToolPosition = pData->GetToolPosition();
+			players[found].ToolRotation = pData->GetToolRotation();
+		}
 
 		LUA::RunLuaHooks("PlayerConnected", players[found].steamIdStr.c_str());
 
@@ -427,7 +439,7 @@ void TDMP::Client::HandleData(EMessage eMsg, SteamNetworkingMessage_t* message)
 			break;
 		}
 
-		if (levelBodiesById.count(pMsg->GetBody().id))
+		if (levelBodiesById.count(pMsg->GetBody().id) && levelBodiesById[pMsg->GetBody().id] != 0)
 		{
 			TDMP::bodyQueue.push_back(MsgBody{
 				pMsg->GetBody().pos,

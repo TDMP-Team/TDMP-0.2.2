@@ -94,6 +94,8 @@ namespace glb {
 	spawnFire oSpawnFire;
 	createProjectile oPewpew;
 
+	convertPath oConvertPath;
+
 	TluaAlloc LuaAllocF;
 	tRegisterGameFunctions RegisterGameFunctions;
 	tRegisterLuaFunction tdRegisterLuaFunction;
@@ -109,6 +111,8 @@ namespace glb {
 	tluaV_settable oluaV_settable;
 	tluaS_newlstr oluaS_newlstr;
 	tlua_index2adr olua_index2adr;
+
+	tHasTag oHasTag;
 
 	createExplosion TDcreateExplosion;
 	spawnParticle TDspawnParticle;

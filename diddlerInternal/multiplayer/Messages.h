@@ -88,6 +88,16 @@ struct MsgVehicle
 	int16_t id;
 };
 
+struct MsgBody
+{
+	td::Vec3 pos;
+	td::Vec4 rot;
+	td::Vec3 vel;
+	td::Vec3 rotVel;
+
+	int id;
+};
+
 /// <summary>
 /// Contains transfornm data and currently driving vehicle
 /// </summary>
@@ -96,7 +106,8 @@ struct MsgPlayerData
 	MsgPlayerData() : m_dwMessageType(LittleDWord(k_EMsgPlayerTransform)) {}
 	DWORD GetMessageType() { return LittleDWord(m_dwMessageType); }
 
-	void SetPlayer(CSteamID steamid, td::Vec3 position, td::Vec4 rotation, td::Vec3 camPosition, td::Vec4 camRotation, MsgVehicle vehicle, float hp, bool ctrl, const char* heldItemName)
+	// terrible
+	void SetPlayer(CSteamID steamid, td::Vec3 position, td::Vec4 rotation, td::Vec3 camPosition, td::Vec4 camRotation, MsgVehicle vehicle, float hp, bool ctrl, const char* heldItemName, bool tool, td::Vec3 toolPos, td::Vec4 toolRot)
 	{
 		id = LittleQWord(steamid.ConvertToUint64());
 		pos = position;
@@ -106,6 +117,11 @@ struct MsgPlayerData
 		curVeh = vehicle;
 		this->hp = hp;
 		this->ctrl = ctrl;
+
+		toolExists = tool;
+		this->toolPos = toolPos;
+		this->toolRot = toolRot;
+
 		strncpy(heldItem, heldItemName, 13);
 	}
 
@@ -130,6 +146,24 @@ struct MsgPlayerData
 			curVeh.id = glb::scene->m_CurrentVehicle->Id;
 		}
 
+		if (glb::player->toolBody != 0)
+		{
+			toolExists = true;
+			toolPos = glb::player->toolBody->Position;
+			toolRot = glb::player->toolBody->Rotation;
+		}
+
+		// It sucks. It sucks so much. If Teardown would have function like DragBody(cameraPos, cameraDirector), then it would be a lot better
+		if (!TDMP::IsServer() && glb::player->grabbedBody != 0 && TDMP::levelBodiesById.count(glb::player->grabbedBody->Id))
+		{
+			grabbed.id = glb::player->grabbedBody->Id;
+
+			grabbed.pos = glb::player->grabbedBody->Position;
+			grabbed.rot = glb::player->grabbedBody->Rotation;
+			grabbed.vel = glb::player->grabbedBody->Velocity;
+			grabbed.rotVel = glb::player->grabbedBody->RotationVelocity;
+		}
+
 		hp = glb::player->health;
 		strncpy(heldItem, glb::player->heldItemName, 13);
 
@@ -146,15 +180,30 @@ struct MsgPlayerData
 
 	const td::Vec3& GetPosition() const { return pos; }
 	const td::Vec4& GetRotation() const { return rot; }
+	
 	const td::Vec3& GetCamPosition() const { return camPos; }
 	const td::Vec4& GetCamRotation() const { return camRot; }
+
+	const td::Vec3& GetToolPosition() const { return toolPos; }
+	const td::Vec4& GetToolRotation() const { return toolRot; }
+	const bool ToolExists() const { return toolExists; }
+
+	const MsgBody GetGrabbed() const { return grabbed; }
 private:
 	const DWORD m_dwMessageType;
 	uint64 id;
 	td::Vec3 pos;
 	td::Vec4 rot;
+
 	td::Vec3 camPos;
 	td::Vec4 camRot;
+
+	bool toolExists;
+	td::Vec3 toolPos;
+	td::Vec4 toolRot;
+
+	MsgBody grabbed;
+
 	MsgVehicle curVeh;
 	float hp;
 	bool ctrl;
@@ -165,6 +214,9 @@ struct LuaCallbackQueue
 {
 	std::string callback;
 	std::string json;
+	std::string steamId;
+
+	size_t len;
 };
 
 struct MsgLuaCallback
@@ -180,11 +232,13 @@ struct MsgLuaCallback
 		callbackName[strlen(callback) + 1] = '\0';
 	}
 
-	void SetJson(const char* js)
+	void SetJson(const char* js, size_t len = -1)
 	{
 		//json[strlen(json)];
-		strncpy(json, js, strlen(js) + 1);
-		json[strlen(js) + 1] = '\0';
+		length = len == -1 ? (strlen(js) + 1) : len + 1;
+
+		strncpy(json, js, length);
+		json[length] = '\0';
 	}
 
 	void SetReliable(bool rel)
@@ -206,21 +260,17 @@ struct MsgLuaCallback
 	{
 		return reliable;
 	}
+
+	const size_t GetJsonLength()
+	{
+		return length;
+	}
 private:
 	const DWORD m_dwMessageType;
 	bool reliable;
 	char callbackName[32];
+	size_t length;
 	char json[1024];
-};
-
-struct MsgBody
-{
-	td::Vec3 pos;
-	td::Vec4 rot;
-	td::Vec3 vel;
-	td::Vec3 rotVel;
-
-	int16_t id;
 };
 
 struct MsgUpdateBody {
@@ -284,7 +334,7 @@ struct MsgUpdateBodies
 
 	void PushBody(int id, MsgBody toPush)
 	{
-		if (id >= 24)
+		if (id >= 40)
 			return;
 		
 		size = id + 1;
@@ -304,7 +354,7 @@ private:
 	const DWORD m_dwMessageType;
 
 	int size;
-	MsgBody bodies[24];
+	MsgBody bodies[40];
 };
 
 /*struct SPacketInfo

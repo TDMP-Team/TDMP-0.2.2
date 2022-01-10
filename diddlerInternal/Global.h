@@ -19,6 +19,7 @@
 #include "crashHandler.h"
 #include "Script.h"
 #include "Lua.hpp"
+#include "td_memory.h"
 
 struct RaycastFilter
 {
@@ -31,6 +32,10 @@ struct RaycastFilter
     TDBody* m_IgnoredBodiesMemory[4]; // small_vector should support pre-reserved buffers... not going to add that right now.
     td::small_vector<TDShape*> m_IgnoredShapes;
 };
+
+namespace td {
+    class small_string;
+}
 
 //world
 typedef void(__fastcall* environmentUpdate)(uintptr_t env);
@@ -87,7 +92,11 @@ typedef int(__fastcall* tlua_createtable)				(lua_State* L, int narray, int nrec
 typedef int(__fastcall* tluaV_gettable)				(lua_State* L, const TValue* t, TValue* key, StkId val);
 typedef int(__fastcall* tluaV_settable)				(lua_State* L, const TValue* t, TValue* key, StkId val);
 typedef int(__fastcall* tluaS_newlstr)				(lua_State* L, const char* str, size_t l);
-typedef TValue*(__fastcall* tlua_index2adr)				(lua_State* L, int idx);
+typedef TValue* (__fastcall* tlua_index2adr)				(lua_State* L, int idx);
+
+typedef bool (__fastcall* tHasTag)				(Entity* ent, td::small_string tag);
+
+typedef td::small_string* (__fastcall* convertPath)(CScriptCore* special, td::small_string* output, td::small_string* path);
 
 //a1: GAME + 0xA8
 //a2: small_string* containing path
@@ -118,8 +127,6 @@ typedef void(__fastcall* modApiLinker)(__int64 a1);
 typedef int(__fastcall* makeHole)(byte data1[32], byte data2[32], byte data3[32], byte data4[32]);
 typedef char(__fastcall* idfk) (__int64 a1, __int64 a2, signed int* a3, signed int* a4, signed int* a5);
 typedef void(__fastcall* damagePlayer) (TDPlayer* player, float damage);
-typedef uintptr_t(__fastcall* TMalloc)(size_t);
-typedef void(__fastcall* TFree)(uintptr_t mem);
 typedef void*(__cdecl* TRealloc)(void* mem, size_t _Size);
 typedef void(__fastcall* spreadFire)(__int64 a1, float v2);
 typedef void(__fastcall* addContextItem)(char* a1, int a2, int a3, float* a4);
@@ -218,13 +225,13 @@ namespace glb {
     extern B_Constructor oB_Constructor;
     extern S_Constructor oS_Constructor;
     extern SetDynamic oSetDynamic;
-    extern TMalloc oTMalloc;
-    extern TFree oTFree;
     extern TRealloc oTRealloc;
     extern frameDrawLine oFDL;
     extern rayCast oRC;
     extern spawnFire oSpawnFire;
     extern createProjectile oPewpew;
+
+    extern convertPath oConvertPath;
 
     extern TluaAlloc LuaAllocF;
     extern tRegisterGameFunctions RegisterGameFunctions;
@@ -241,6 +248,8 @@ namespace glb {
     extern tluaV_settable oluaV_settable;
     extern tluaS_newlstr oluaS_newlstr;
     extern tlua_index2adr olua_index2adr;
+
+    extern tHasTag oHasTag;
     
     extern createExplosion TDcreateExplosion;
     extern spawnParticle TDspawnParticle;

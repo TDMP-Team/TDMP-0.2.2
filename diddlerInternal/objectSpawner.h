@@ -129,7 +129,7 @@ namespace spawner {
 	spawnedObject placeChildObject(std::string filepath, childObjectSpawnParams params = {});
 	bool spawnChildEntity(std::string filepath, childObjectSpawnParams params, spawnedObject* object);
 	spawnedObject placeFreeObject(std::string filepath, freeObjectSpawnParams params = {});
-	bool spawnFreeEntity(std::string filepath, freeObjectSpawnParams params, spawnedObject* object);
+	bool spawnFreeEntity(std::string filepath, freeObjectSpawnParams params, spawnedObject* object, float scale = 1);
 	void deleteLastObject();
 	KMSpawnedObject spawnObjectProxy(std::string path, objectSpawnerParams params);
 	void processMostRecentObject();

@@ -20,7 +20,7 @@
 
 #include "../Lua.h"
 
-std::string TDMP::Version = "0.9.2";
+std::string TDMP::Version = "0.2.0";
 bool TDMP::LevelLoaded = false;
 std::vector<TDBody*> TDMP::levelBodies{};
 std::map<int, int> TDMP::levelBodiesById{};
@@ -36,6 +36,7 @@ void TDMP::Init()
 	if (SteamAPI_Init())
 	{
 		Debug::print("Steam's API was initialized(" + std::to_string(SteamUser()->GetSteamID().ConvertToUint64()) + ")");
+		std::setlocale(LC_NUMERIC, "C");
 
 		const DWORD buffSize = 65535;
 		static char buffer[buffSize];
@@ -113,6 +114,8 @@ void OnUnLoadLevel()
 	{
 		TDMP::players[i].hideBody = false;
 		TDMP::players[i].bodyExists = false;
+		TDMP::players[i].toolBodyExists = false;
+		TDMP::players[i].lastItem.clear();
 	}
 
 	TDMP::Debug::print("Level unloaded");
