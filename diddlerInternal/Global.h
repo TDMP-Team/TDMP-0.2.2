@@ -94,7 +94,8 @@ typedef int(__fastcall* tluaV_settable)				(lua_State* L, const TValue* t, TValu
 typedef int(__fastcall* tluaS_newlstr)				(lua_State* L, const char* str, size_t l);
 typedef TValue* (__fastcall* tlua_index2adr)				(lua_State* L, int idx);
 
-typedef bool (__fastcall* tHasTag)				(Entity* ent, td::small_string tag);
+typedef bool(__fastcall* tHasTag)				(Entity* ent, td::small_string tag);
+typedef void(__fastcall* tMakeHole)				(void* a1, void* a2, td::Vec3* pos, float softDmg, float mediumDmg, float hardDmg, bool noSound, void* a3);
 
 typedef td::small_string* (__fastcall* convertPath)(CScriptCore* special, td::small_string* output, td::small_string* path);
 
@@ -124,7 +125,6 @@ typedef BOOL(__stdcall* twglSwapBuffers)(_In_ HDC hDc);
 typedef void (*tPaint) (uintptr_t* Scene, td::Vec3* Position, float size, int darken, float dispersion); 
 typedef void(__fastcall* cameraPositioning)(uintptr_t a1, float a2, uintptr_t a3, uintptr_t a4);
 typedef void(__fastcall* modApiLinker)(__int64 a1);
-typedef int(__fastcall* makeHole)(byte data1[32], byte data2[32], byte data3[32], byte data4[32]);
 typedef char(__fastcall* idfk) (__int64 a1, __int64 a2, signed int* a3, signed int* a4, signed int* a5);
 typedef void(__fastcall* damagePlayer) (TDPlayer* player, float damage);
 typedef void*(__cdecl* TRealloc)(void* mem, size_t _Size);
@@ -214,7 +214,6 @@ namespace glb {
     extern cameraPositioning oCamPos;
     extern damageObject oDamageObject;
     extern modApiLinker oMAL;
-    extern makeHole oMakeHole;
     extern damagePlayer oDamagePlayer;
     extern idfk killme;
     extern tPaint oPaint;
@@ -231,6 +230,7 @@ namespace glb {
     extern spawnFire oSpawnFire;
     extern createProjectile oPewpew;
 
+    extern tMakeHole oMakeHole;
     extern convertPath oConvertPath;
 
     extern TluaAlloc LuaAllocF;

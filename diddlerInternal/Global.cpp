@@ -75,7 +75,6 @@ namespace glb {
 	cameraPositioning oCamPos;
 	damageObject oDamageObject;
 	modApiLinker oMAL;
-	makeHole oMakeHole;
 	damagePlayer oDamagePlayer;
 	idfk killme;
 	tPaint oPaint;
@@ -94,6 +93,7 @@ namespace glb {
 	spawnFire oSpawnFire;
 	createProjectile oPewpew;
 
+	tMakeHole oMakeHole;
 	convertPath oConvertPath;
 
 	TluaAlloc LuaAllocF;

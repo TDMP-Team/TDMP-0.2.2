@@ -21,17 +21,10 @@ void hLog(td::small_string* msg)
     printf_s("[Game Log] %s\n", msg->c_str());
 }
 
-void* test(CScriptCore* special, td::small_string* outPath, td::small_string* pathLua)
+void test(void* a1, void* a2, td::Vec3* pos, float softDmg, float mediumDmg, float hardDmg, bool noSound, void* a3)
 {
-    //printf_s("LUA path: %s\n", pathLua->c_str());
-    if (std::string(pathLua->c_str()) == std::string("MOD/vox/minigun.vox"))
-    {
-        printf_s("Script Address: %s\n", pathLua->c_str());
-    }
-    td::small_string* ptr = glb::oConvertPath(special, outPath, pathLua);
-    //printf_s("REAL path: %s\n", outPath->c_str());
-
-    return ptr;
+    printf_s("MakeHole\n");
+    glb::oMakeHole(a1, a2, pos, softDmg, mediumDmg, hardDmg, noSound, a3);
 }
 
 void sigscanItems() {
@@ -371,6 +364,11 @@ void sigscanItems() {
     printIntegPercentage(percentage);
     if (!glb::oHasTag) { sigScanError = true; }
 
+    glb::oMakeHole = (tMakeHole)mem::FindPattern((PBYTE)"\x48\x81\xEC\x00\x00\x00\x00\x48\xC7\x44\x24\x00\x00\x00\x00\x00\x48\x8D\x44\x24\x00\x48\x89\x44\x24\x00", "xxx????xxxx?????xxxx?xxxx?", GetModuleHandle(NULL), &percentage);
+    printf_s("oMakeHole           : %p", glb::oMakeHole);
+    printIntegPercentage(percentage);
+    if (!glb::oMakeHole) { sigScanError = true; }
+
     DWORD64 Log = mem::FindPattern((PBYTE)"\x80\x79\x0F\x00\x74\x03\x48\x8B\x09\x48\x8B\xD1\x48\x8D\x0D\x00\x00\x00\x00", "xxxxxxxxxxxxxxx????", GetModuleHandle(NULL), &percentage);
     printf_s("Log           : %p", &Log);
     printIntegPercentage(percentage);
@@ -384,7 +382,7 @@ void sigscanItems() {
 
     //DetourTransactionBegin();
     //DetourUpdateThread(GetCurrentThread());
-    //DetourAttach(&(PVOID&)glb::oConvertPath, test);
+    //DetourAttach(&(PVOID&)glb::oMakeHole, test);
     //DetourTransactionCommit();
 
     if (sigScanError) {
