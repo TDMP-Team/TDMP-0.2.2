@@ -136,7 +136,7 @@ void TDMP::Server::LuaTick()
 	{
 		for (size_t i = 0; i < callbacks; i++)
 		{
-			LUA::CallEvent(callbackQueue[i].callback.c_str(), callbackQueue[i].json.c_str());
+			LUA::CallEvent(callbackQueue[i].callback.c_str(), callbackQueue[i].json.c_str(), callbackQueue[i].steamId);
 		}
 
 		callbackQueue.clear();

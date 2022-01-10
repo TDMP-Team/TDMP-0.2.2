@@ -214,7 +214,7 @@ void TDMP::Player::LuaTick()
 
 			// x: -0.821, y: -0.017892, z: -0.569, w: 0.00374 >> INCORRECT
 			// x: 0.00374, y: -0.8217, z: -0.01789, w: -0.56956 >> CORRECt
-//("[\"" + steamIdStr +
+			//("[\"" + steamIdStr +
 				//"\",[" + std::to_string(ToolRotation.x) + ", " + std::to_string(ToolRotation.y) + ", " + std::to_string(ToolRotation.z) + ", " + std::to_string(ToolRotation.w) + "]," + std::to_string(toolBody.body->Id) + "]").c_str());
 
 			LUA::RunLuaHooks("ToolTransformSync", steamIdStr.c_str());

@@ -198,13 +198,7 @@ void TDMP::Client::Frame()
 {
 	// Should be true when we was on the server and on the map and returned to the main menu
 	if (glb::game->State != gameState::ingame && TDMP::LevelLoaded && serverHandle != k_HSteamNetConnection_Invalid)
-	{
-		Debug::print("Disconnecting from the server", Env::Client);
-
-		Disconnect();
-
 		return;
-	}
 
 	if (serverHandle == k_HSteamNetConnection_Invalid || glb::game->State != gameState::ingame || !TDMP::LevelLoaded)
 		return;
