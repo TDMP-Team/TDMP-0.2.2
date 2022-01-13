@@ -819,8 +819,8 @@ namespace spawner {
             glb::oS_Constructor(uSHAPE, uBODY);
             uintptr_t VOX = glb::oSpawnVox(&file_path, &sub_path, scale);
 
-            glb::oCreateTexture(VOX);
             glb::oCreatePhysics(VOX);
+            glb::oCreateTexture(VOX);
 
             //SHAPE->pVox = (TDVox*)VOX;
             *(uintptr_t*)((uintptr_t)SHAPE + 152) = VOX;

@@ -180,6 +180,14 @@ void TDMP::Client::LuaTick()
 	msg.SetPlayer(glb::player->position, finalRot, glb::player->cameraPosition, glb::player->cameraQuat);
 
 	client->SendData(&msg, sizeof(msg), k_nSteamNetworkingSend_Unreliable);
+
+	for (uint32 i = 0; i < MaxPlayers; ++i)
+	{
+		if (players[i].Active)
+		{
+			players[i].Frame();
+		}
+	}
 }
 
 void TDMP::Client::Tick()
@@ -196,22 +204,17 @@ void TDMP::Client::Tick()
 		return;
 }
 
+// TODO: Remove Frame() functions at all
 void TDMP::Client::Frame()
 {
+	/*
 	// Should be true when we was on the server and on the map and returned to the main menu
 	if (glb::game->State != gameState::ingame && TDMP::LevelLoaded && serverHandle != k_HSteamNetConnection_Invalid)
 		return;
 
 	if (serverHandle == k_HSteamNetConnection_Invalid || glb::game->State != gameState::ingame || !TDMP::LevelLoaded)
 		return;
-
-	for (uint32 i = 0; i < MaxPlayers; ++i)
-	{
-		if (players[i].Active)
-		{
-			players[i].Frame();
-		}
-	}
+		*/
 }
 
 void TDMP::Client::Connect(uint64 serverID, uint32 serverIP)

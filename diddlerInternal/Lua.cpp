@@ -815,14 +815,39 @@ std::string LUA::GetToolPath(std::string toolName)
 		return "";
 }
 
+std::string convertLuaPath(std::string luaPath, CScriptCore* pSC)
+{
+	if (luaPath.substr(0, 3) == "MOD")
+	{
+		return std::string(pSC->m_ScriptLocation.c_str()) + luaPath.substr(3, luaPath.size());
+	}
+	else if (luaPath.substr(0, 5) == "LEVEL")
+	{
+		// TODO
+	}
+	else if (luaPath.substr(0, 4) == "data" || luaPath.substr(0, 6) == "KM_Vox")
+	{
+		return luaPath;
+	}
+
+	return "";
+}
+
 void RegisterTool(CScriptCore* pSC, lua_State*& L, CRetInfo* ret)
 {
 	const char* tool = luaL_checkstring(L, 1);
 	const char* path = luaL_checkstring(L, 2);
 	lua_pop(L, 2);
 
-	std::string luaPath = std::string(path);
-	std::string realPath = std::string(pSC->m_ScriptLocation.c_str()) + luaPath.substr(3, luaPath.size());
+	std::string sPath(path);
+	if (sPath.substr(sPath.size() - 4, sPath.size()) != std::string(".vox") || sPath.find(":") != std::string::npos) // ":" prevents from using C:/ or http:/ or file:/ and etc
+	{
+		glb::oluaL_error(L, "Invalid path to .vox file! %s", path);
+
+		return;
+	}
+
+	std::string realPath = convertLuaPath(sPath, pSC);
 
 	toolsModels[tool] = realPath;
 }
@@ -888,31 +913,140 @@ float clamp(float n, float lower, float upper) {
 	return std::max(lower, std::min(n, upper));
 }
 
+std::map<int, TDBody*> LUA::spawnedBodies;
 void SpawnVox(CScriptCore* pSC, lua_State*& L, CRetInfo* ret)
 {
 	const char* path = luaL_checkstring(L, 1);
 	float scale = luaL_checknumber(L, 2);
 	lua_pop(L, 2);
 
-	std::string luaPath = std::string(path);
-	std::string realPath = std::string(pSC->m_ScriptLocation.c_str()) + luaPath.substr(3, luaPath.size());
+	std::string sPath(path);
+	if (sPath.substr(sPath.size() - 4, sPath.size()) != std::string(".vox") || sPath.find(":") != std::string::npos) // ":" prevents from using C:/ or http:/ or file:/ and etc
+	{
+		glb::oluaL_error(L, "Invalid path to .vox file! %s", path);
+
+		return;
+	}
+
+	std::string realPath = convertLuaPath(std::string(path), pSC);
 
 	spawner::freeObjectSpawnParams params = {};
 	params.useUserRotation = false;
 
 	spawner::spawnedObject body;
-	spawner::spawnFreeEntity(path, params, &body, clamp(scale, 0.1f, 3.f));
+	spawner::spawnFreeEntity(realPath, params, &body, clamp(scale, 0.1f, 3.f));
 
 	lua_pushnumber(L, body.body->Id);
 
+	LUA::spawnedBodies[body.body->Id] = body.body;
+
 	ret->retCount = 1;
+}
+
+void FindShape(CScriptCore* pSC, lua_State*& L, CRetInfo* ret)
+{
+	int shapeId = luaL_checknumber(L, 1);
+	lua_pop(L, 1);
+
+	for (size_t i = 0; i < glb::scene->m_Shapes->size(); i++)
+	{
+		TDShape* s = glb::scene->m_Shapes->data()[i];
+
+		if (s->Id == shapeId)
+		{
+			TDMP::Debug::print(s);
+			TDMP::Debug::print((char*)s + 0x38);
+			TDMP::Debug::print(std::addressof(s->collide));
+
+		}
+	}
+}
+
+// TODO
+void WeldBodies(CScriptCore* pSC, lua_State*& L, CRetInfo* ret)
+{
+	int parentBodyId = luaL_checkinteger(L, 1);
+	int childBodyId = luaL_checkinteger(L, 2);
+	int parentShapeId = luaL_checkinteger(L, 3);
+	int childShapeId = luaL_checkinteger(L, 4);
+	lua_pop(L, 4);
+
+	if (parentBodyId == parentShapeId || childBodyId == childShapeId)
+		return;
+
+	if (!LUA::spawnedBodies.count(parentBodyId) && !TDMP::levelBodiesById.count(parentBodyId))
+		return;
+
+	if (!LUA::spawnedBodies.count(childBodyId) && !TDMP::levelBodiesById.count(childBodyId))
+		return;
+
+	TDBody* parentBody = LUA::spawnedBodies.count(parentBodyId) ? LUA::spawnedBodies[parentBodyId] : TDMP::levelBodies[TDMP::levelBodiesById[parentBodyId]];
+	TDBody* childBody = LUA::spawnedBodies.count(childBodyId) ? LUA::spawnedBodies[childBodyId] : TDMP::levelBodies[TDMP::levelBodiesById[childBodyId]];
+
+	int body1ShapeCount = parentBody->countContainedShapes();
+	int body2ShapeCount = childBody->countContainedShapes();
+
+	TDShape* targetShape = 0;
+	TDBody* newBody = 0;
+	TDBody* oldBody = 0;
+
+	//decide which parent is kept
+	if (body1ShapeCount >= body2ShapeCount) {
+		//move shapes from body2 to body1
+		targetShape = (TDShape*)childBody->pChild;
+		newBody = parentBody;
+		oldBody = childBody;
+	}
+	else {
+		//move shapes from body1 to body2
+		targetShape = (TDShape*)parentBody->pChild;
+		newBody = childBody;
+		oldBody = parentBody;
+	}
+
+	std::vector<TDShape*> scheduledShapes = {};
+	int transferCounter = 0;
+
+	//iterate children on the doomed parent and schedule them for transfer
+	while (targetShape != 0) {
+		std::cout << targetShape << " : " << entityTypeStr[(int)targetShape->Type - 1] << std::endl;
+		if ((int)targetShape->Type == 2) {
+			scheduledShapes.push_back(targetShape);
+		}
+		else {
+			continue;
+		}
+		targetShape = (TDShape*)targetShape->pSibling;
+	}
+
+	//transfer all children to the new parent, destroy the old one
+	for (TDShape* targetShape : scheduledShapes) {
+		transferCounter++;
+
+		glm::vec3 targetShapeWorldPosition = math::expandPosition(math::q_td2glm(targetShape->getParentBody()->Rotation), math::v3_td2glm(targetShape->getParentBody()->Position), math::v3_td2glm(targetShape->pOffset));
+		glm::quat targetShapeWorldrotation = math::expandRotation(math::q_td2glm(targetShape->getParentBody()->Rotation), math::q_td2glm(targetShape->rOffset));
+		glm::vec3 targetShapeNewPOffset = math::localisePosition(math::q_td2glm(newBody->Rotation), math::v3_td2glm(newBody->Position), targetShapeWorldPosition);
+		glm::quat targetShapeNewROffset = math::localiseRotation(math::q_td2glm(newBody->Rotation), targetShapeWorldrotation);
+
+		glb::tdUpdateShapeBody((uintptr_t)targetShape, (uintptr_t)newBody);
+		targetShape->pOffset = { targetShapeNewPOffset.x, targetShapeNewPOffset.y, targetShapeNewPOffset.z };
+		*(glm::quat*)&targetShape->rOffset = targetShapeNewROffset;
+	}
+
+	glb::oUpdateShapes((uintptr_t)newBody);
+	glb::tdUpdateFunc(newBody, 0, 1);
+	std::cout << "(WELD) Transfered " << std::to_string(transferCounter) << " shapes from " << std::hex << oldBody << " to " << newBody << std::endl;
+	oldBody->Destroy(oldBody, true);
 }
 
 void LUA::RegisterLuaCFunctions(CScriptCore_LuaState* pSCLS)
 {
 	hookQueue[(int)*pSCLS->m_LuaState] = std::vector<callHook>{};
 
+	RegisterLuaFunction(pSCLS, "TDMP_Debug_FindShape", FindShape);
+
 	RegisterLuaFunction(pSCLS, "TDMP_SpawnVox", SpawnVox);
+	RegisterLuaFunction(pSCLS, "TDMP_Weld", WeldBodies);
 	RegisterLuaFunction(pSCLS, "TDMP_RegisterToolVox", RegisterTool);
 
 	RegisterLuaFunction(pSCLS, "TDMP_GetLobbyMembers", GetLobbyMembers);

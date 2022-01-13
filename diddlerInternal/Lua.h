@@ -26,6 +26,7 @@ namespace LUA
 		int ref;
 	};
 
+	extern std::map<int, TDBody*> spawnedBodies;
 	extern std::vector<Callback> callbacks;
 	extern std::map<std::string, std::map<const char*, LUA::Hook>> hooks;
 

@@ -169,7 +169,7 @@ public:
     td::Vec3 posMin; //0x001C
     td::Vec3 posMax; //0x0028
     char pad_0034[22]; //0x0034
-    bool collide; //0x004A
+    bool collide; //0x0072
     char pad_004B[9]; //0x004B
     int32_t Texture; //0x007C
     char pad_0080[24]; //0x0080
@@ -214,7 +214,6 @@ public:
 };
 
 
-// TODO: Fix offsets, "health" isn't health anymore
 class TDPlayer {
 public:
 	td::Vec3 position;			//0x000 - 0x012

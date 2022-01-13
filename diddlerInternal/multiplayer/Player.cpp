@@ -97,12 +97,22 @@ void TDMP::Player::CreateBodyIfNotExists()
 	spawner::freeObjectSpawnParams params = {};
 	params.attributes.push_back({ td::small_string("unbreakable"),td::small_string("") });
 	params.useUserRotation = false;
-	//params.nocull = true; // Nocull would make it so we can see players at any distance, but it also breaks rendering, so let's comment it out for now.
 
-	body = spawner::placeFreeObject("KM_Vox\\Default\\ptest\\object.vox", params);
+	body = {};
+	spawner::spawnFreeEntity("KM_Vox\\Default\\ptest\\object.vox", params, &body, 1);
+	//body = spawner::placeFreeObject("KM_Vox\\Default\\ptest\\object.vox", params);
+	
 	bodyExists = true;
+	//spawner::spawnFreeEntity(path, params, &toolBody, .5f);
 
-	if (body.body)
+	for (TDShape* cShape : body.shapes) {
+		for (spawner::objectAttribute att : params.attributes) {
+			glb::oSOA(cShape, &att.attribute, &att.level);
+		}
+		cShape->collide = false;
+	}
+
+	/*if (body.body)
 	{
 		TDShape* shape = (TDShape*)body.body->pChild;
 		int voxelCount = 0;
@@ -113,7 +123,7 @@ void TDMP::Player::CreateBodyIfNotExists()
 
 			shape = (TDShape*)shape->pSibling;
 		}
-	}
+	}*/
 
 	LUA::RunLuaHooks("PlayerBodyCreated", ("[" + steamIdStr + "," + std::to_string(id) + "]").c_str());
 }

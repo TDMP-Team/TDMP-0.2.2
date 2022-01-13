@@ -96,8 +96,10 @@ void OnUnLoadLevel()
 {
 	TDMP::bodyQueue.clear();
 	TDMP::levelBodies.clear();
+	TDMP::levelBodiesById.clear();
 	LUA::callbacks.clear();
 	LUA::hooks.clear();
+	LUA::spawnedBodies.clear();
 
 	if (TDMP::server != nullptr)
 	{
