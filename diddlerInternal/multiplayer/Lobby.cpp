@@ -38,8 +38,6 @@ void TDMP::Lobby::OnLobbyGameCreated(LobbyGameCreated_t* pCallback)
 void TDMP::Lobby::Leave()
 {
 	SteamMatchmaking()->LeaveLobby(id);
-	delete TDMP::lobby;
-	TDMP::lobby = nullptr;
 }
 
 bool TDMP::Lobby::IsMember(CSteamID steamID)
@@ -65,6 +63,14 @@ bool TDMP::Lobby::IsHost(CSteamID steamID)
 /// </summary>
 void TDMP::Lobby::OnLobbyJoinRequest(GameLobbyJoinRequested_t* pCallback)
 {
+	// If we're in lobby already and we're trying to connect to the same lobby then do nothing
+	if (TDMP::lobby != nullptr && TDMP::lobby->id == pCallback->m_steamIDLobby.ConvertToUint64())
+	{
+		Debug::error("Tried to connect to the same lobby twice or more! Ignoring");
+
+		return;
+	}
+
 	CallResultLobbyEntered.Set(SteamMatchmaking()->JoinLobby(pCallback->m_steamIDLobby), this, &Lobby::OnLobbyEntered);
 }
 

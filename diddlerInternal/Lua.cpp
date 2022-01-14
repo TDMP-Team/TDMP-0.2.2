@@ -1035,7 +1035,7 @@ void WeldBodies(CScriptCore* pSC, lua_State*& L, CRetInfo* ret)
 
 	glb::oUpdateShapes((uintptr_t)newBody);
 	glb::tdUpdateFunc(newBody, 0, 1);
-	std::cout << "(WELD) Transfered " << std::to_string(transferCounter) << " shapes from " << std::hex << oldBody << " to " << newBody << std::endl;
+	//std::cout << "(WELD) Transfered " << std::to_string(transferCounter) << " shapes from " << std::hex << oldBody << " to " << newBody << std::endl;
 	oldBody->Destroy(oldBody, true);
 }
 

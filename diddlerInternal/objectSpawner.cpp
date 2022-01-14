@@ -797,8 +797,8 @@ namespace spawner {
         uintptr_t uBODY = glb::oTMalloc(0x232u);
         TDBody* BODY = (TDBody*)uBODY;
 
-        std::cout << "===== Spawning debug =====" << std::endl;
-        std::cout << "Body:  0x" << std::hex << BODY << std::endl;
+        //std::cout << "===== Spawning debug =====" << std::endl;
+        //std::cout << "Body:  0x" << std::hex << BODY << std::endl;
 
         glb::oB_Constructor(uBODY, (uintptr_t)nullptr);
         glb::oSetDynamic(uBODY, true);
@@ -825,8 +825,8 @@ namespace spawner {
             //SHAPE->pVox = (TDVox*)VOX;
             *(uintptr_t*)((uintptr_t)SHAPE + 152) = VOX;
 
-            std::cout << "Shape: 0x" << std::hex << SHAPE << std::endl;
-            std::cout << "Vox:   0x" << std::hex << (TDVox*)VOX << std::endl;
+            //std::cout << "Shape: 0x" << std::hex << SHAPE << std::endl;
+            //std::cout << "Vox:   0x" << std::hex << (TDVox*)VOX << std::endl;
 
             object->shapes.push_back(SHAPE);
             object->voxes.push_back((TDVox*)VOX);
