@@ -5,6 +5,7 @@
 #include <thread>
 #include <Windows.h>
 #include <sstream>
+#include <mutex>
 
 #include "../drawCube.h"
 #include "../objectSpawner.h"
@@ -13,6 +14,8 @@
 #include "../glm/vec3.hpp"
 
 #include "../Lua.h"
+
+std::mutex playerSyncMutex;
 
 TDMP::Client* TDMP::client;
 std::vector<std::string> TDMP::packets;
@@ -105,8 +108,30 @@ void TDMP::Client::SendData(const void* pData, uint32 nSizeOfData, int nSendFlag
 
 std::vector<LuaCallbackQueue> clientCallbackQueue;
 std::vector<MsgSledgeHit> sledgeQueue;
+
+// Since steam receiving data in different thread, we need to set received heldItem inside game's loop (i.e. before player's LuaTick)
+struct playerInGameLoopSync
+{
+	std::string heldItem;
+
+	int id;
+};
+
+// looks bad though. Need to turn LuaTick into GameTick
+std::vector<playerInGameLoopSync> playerQueue;
 void TDMP::Client::LuaTick()
 {
+	/*int recPlayers = playerQueue.size();
+	if (recPlayers > 0)
+	{
+		for (size_t i = 0; i < recPlayers; i++)
+		{
+			players[playerQueue[i].id].heldItem = playerQueue[i].heldItem;
+		}
+
+		playerQueue.clear();
+	}*/
+	
 	for (uint32 i = 0; i < MaxPlayers; ++i)
 	{
 		if (players[i].Active)
@@ -188,6 +213,8 @@ void TDMP::Client::LuaTick()
 			players[i].Frame();
 		}
 	}
+
+	ReceiveNetData();
 }
 
 void TDMP::Client::Tick()
@@ -198,10 +225,10 @@ void TDMP::Client::Tick()
 		return;
 
 	// We need to receieve amy data evem of we're in main menu
-	ReceiveNetData();
+	//ReceiveNetData();
 	
-	if (glb::game->State != gameState::ingame)
-		return;
+	//if (glb::game->State != gameState::ingame)
+	//	return;
 }
 
 // TODO: Remove Frame() functions at all
@@ -273,6 +300,8 @@ void TDMP::Client::HandlePlayerData(MsgPlayerData* pData, HSteamNetConnection* c
 			players[i].hp = pData->GetHealth();
 			players[i].isCtrlPressed = pData->GetCtrl();
 			players[i].heldItem = std::string(pData->GetHeldItem());
+			//if (players[i].heldItem != std::string(pData->GetHeldItem()))
+			//	playerQueue.push_back(playerInGameLoopSync{ std::string(pData->GetHeldItem()), (int)i });
 
 			if (pData->ToolExists())
 			{

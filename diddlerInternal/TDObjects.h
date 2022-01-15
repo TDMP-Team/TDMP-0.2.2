@@ -238,7 +238,7 @@ public:
 	//byte paddingF[0x74];
 	float health;				//0x15C - 0x160
 	byte paddingG[0x484];		//0x160 - 0x418
-	char heldItemName[13];		//0x3CB - 0x3D8
+	td::small_string heldItemName;		//0x3CB - 0x3D8
 	TDBody* toolBody;
 
 	td::Vec3 cameraEuler() {
@@ -520,7 +520,13 @@ public:
 	char pad_0088[24];				//0x0088
 	TDPlayer* m_Player;				//0x00A0
 	void* m_PathMgr;				//0x00A8
-	char pad_00A8[48];				//0x00B0
+	//char pad_00A8[48];				//0x00B0
+	void* N00000084; //0x00B0
+	void* N00000085; //0x00B8
+	void* m_Registry; //0x00C0
+	void* N00000087; //0x00C8
+	void* N00000088; //0x00D0
+	void* m_Debug; //0x00D8
 	void* m_SteamInterface;			//0x00E0 - To be used for mod sync
 	char pad_00E8[48];				//0x00E8
 	bool m_Paused;					//0x0118

@@ -116,7 +116,9 @@ void OnUnLoadLevel()
 	{
 		TDMP::players[i].hideBody = false;
 		TDMP::players[i].bodyExists = false;
-		TDMP::players[i].toolBodyExists = false;
+		TDMP::players[i].lastItem = "";
+		TDMP::players[i].heldItem = "";
+		TDMP::players[i].toolBody.body = 0;
 		TDMP::players[i].lastItem.clear();
 	}
 

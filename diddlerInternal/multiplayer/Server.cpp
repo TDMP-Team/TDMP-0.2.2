@@ -563,37 +563,40 @@ void TDMP::Server::BroadcastData(const void* pData, uint32 nSizeOfData, int nSen
 
 void TDMP::Server::Shutdown()
 {
-	for (uint32 i = 0; i < MaxPlayers; ++i)
+	if (ConnectedToSteam)
 	{
-		if (ClientData[i].Active)
+		for (uint32 i = 0; i < MaxPlayers; ++i)
 		{
-			// Flush all others messages of connection
-			SteamGameServerNetworkingSockets()->FlushMessagesOnConnection(ClientData[i].handle);
-			MsgServerExiting msg;
-			// And send new one
-			SteamGameServerNetworkingSockets()->SendMessageToConnection(ClientData[i].handle, &msg, sizeof(msg), k_nSteamNetworkingSend_Reliable, nullptr);
+			if (ClientData[i].Active)
+			{
+				// Flush all others messages of connection
+				SteamGameServerNetworkingSockets()->FlushMessagesOnConnection(ClientData[i].handle);
+				MsgServerExiting msg;
+				// And send new one
+				SteamGameServerNetworkingSockets()->SendMessageToConnection(ClientData[i].handle, &msg, sizeof(msg), k_nSteamNetworkingSend_Reliable, nullptr);
 
-			ClientData[i].Active = false;
+				ClientData[i].Active = false;
+			}
+
+			if (players[i].body.body != 0x00)
+			{
+				players[i].Active = false;
+			}
 		}
 
-		if (players[i].body.body != 0x00)
-		{
-			players[i].Active = false;
-		}
+		SteamGameServer()->EnableHeartbeats(false);
+
+		SteamGameServerNetworkingSockets()->CloseListenSocket(socket);
+		SteamGameServerNetworkingSockets()->DestroyPollGroup(pollGroup);
+		SteamGameServer()->LogOff();
+
+		SteamGameServer_Shutdown();
 	}
 
-	SteamGameServer()->EnableHeartbeats(false);
-
-	SteamGameServerNetworkingSockets()->CloseListenSocket(socket);
-	SteamGameServerNetworkingSockets()->DestroyPollGroup(pollGroup);
-	SteamGameServer()->LogOff();
-	
-	SteamGameServer_Shutdown();
-
 	SteamMatchmaking()->SetLobbyJoinable(TDMP::lobby->id, true);
+	
+	Debug::print("Server is closed. Lobby is joinable now", Env::Server);
 
 	delete TDMP::server;
 	TDMP::server = nullptr;
-	
-	Debug::print("Server is closed. Lobby is joinable now", Env::Server);
 }

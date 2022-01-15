@@ -35,11 +35,11 @@ namespace TDMP
 		td::Vec3 CamPosition;
 		td::Vec4 CamRotation;
 
+		bool isDead; // needed for calling "PlayerDied" hook only once
 		bool hideBody;
 		bool bodyExists;
 		spawner::spawnedObject body;
 
-		bool toolBodyExists;
 		spawner::spawnedObject toolBody;
 
 		TDVehicle* currentVehicle;

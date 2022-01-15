@@ -122,7 +122,8 @@ struct MsgPlayerData
 		this->toolPos = toolPos;
 		this->toolRot = toolRot;
 
-		strncpy(heldItem, heldItemName, 13);
+		strncpy(heldItem, heldItemName, strlen(heldItemName) + 1);
+		heldItem[strlen(heldItemName) + 1] = '\0';
 	}
 
 	void SetPlayer(td::Vec3 position, td::Vec4 rotation, td::Vec3 camPosition, td::Vec4 camRotation)
@@ -165,7 +166,10 @@ struct MsgPlayerData
 		}
 
 		hp = glb::player->health;
-		strncpy(heldItem, glb::player->heldItemName, 13);
+
+		const char* item = glb::player->heldItemName.c_str();
+		strncpy(heldItem, item, strlen(item) + 1);
+		heldItem[strlen(item) + 1] = '\0';
 
 		ctrl = TDMP::localInputData.Ctrl;
 	}
@@ -207,7 +211,7 @@ private:
 	MsgVehicle curVeh;
 	float hp;
 	bool ctrl;
-	char heldItem[13];
+	char heldItem[32];
 };
 
 struct LuaCallbackQueue

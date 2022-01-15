@@ -21,45 +21,11 @@ void hLog(td::small_string* msg)
     printf_s("[Game Log] %s\n", msg->c_str());
 }
 
-void test(void* a1, void* a2, td::Vec3* pos, float softDmg, float mediumDmg, float hardDmg, bool noSound, void* a3)
+void test(void* a1, void* a2, void* a3)
 {
-    printf_s("MakeHole\n");
-    glb::oMakeHole(a1, a2, pos, softDmg, mediumDmg, hardDmg, noSound, a3);
 }
 
 void sigscanItems() {
-    //glb::oTdDelBdy = (deleteBody)mem::FindPattern((PBYTE)"\x48\x83\xEC\x28\x48\x8B\xCA\x33\xD2\xE8\x82\x16\x0F\x00\x48\x8B", "xxxxxxxxxxxxxxxx", GetModuleHandle(NULL), &percentage);
-    //glb::oMakeHole = (makeHole)mem::FindPattern((PBYTE)"\x48\x8B\xC4\x53\x48\x81\xEC\x90\x00\x00\x00\x0F\x29\x70\xE8\x4C\x8D\x40\xA8\x48\x8B\xDA\x0F\x29\x78\xD8\x44\x0F\x29\x40\xC8\x48", "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx", GetModuleHandle(NULL), &percentage);
-    //glb::oMAL = (modApiLinker)mem::FindPattern((PBYTE)"\x40\x55\x48\x8D\xAC\x24\x80\xFA\xFF\xFF\x48\x81\xEC\x80\x06\x00", "xxxxxxxxxxxxxxxx", GetModuleHandle(NULL), &percentage);
-    //glb::oTDmain = (tdMain)mem::FindPattern((PBYTE)"\xE8\x00\x00\x00\x00\x48\x8D\x4D\xA7\xE8\x00\x00\x00\x00\xEB\x1D", "x????xxxxx????xx", GetModuleHandle(NULL), &percentage);
-    //glb::oCreateLight = (createLight)mem::FindPattern((PBYTE)"\x48\x83\xEC\x58\x48\x8B\x05\x95\x25\x3F\x00\x80\xB8\x10\x01\x00\x00\x00\x0F\x85\xA6\x00\x00\x00\xF2\x0F\x10\x02\x8B\x42\x08\xF3", "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx", GetModuleHandle(NULL), &percentage);
-    //glb::oEnvUpdate = (environmentUpdate)mem::FindPattern((PBYTE)"\x48\x8B\xC4\x55\x53\x56\x57\x41\x56\x48\x8D\xA8\x38\xFE\xFF\xFF\x48\x81\xEC\xA0\x02\x00\x00\x48\xC7\x45\x80\xFE\xFF\xFF\xFF\x0F", "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx", GetModuleHandle(NULL), &percentage);
-    //glb::plankPatchFunction = (uintptr_t)mem::FindPattern((PBYTE)"\x40\x55\x56\x57\x41\x54\x41\x55\x41\x56\x41\x57\x48\x8D\xAC\x24\x50\xCF\xFF\xFF\xB8\xB0\x31\x00\x00\xE8\xF2\xE8\x19\x00\x48\x2B", "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx", GetModuleHandle(NULL), &percentage);
-    //glb::oHandleBombObjs = (handleBombObjs)mem::FindPattern((PBYTE)"\x48\x8B\xC4\x55\x57\x41\x56\x48\x8D\xA8\x18\xFF\xFF\xFF\x48\x81", "xxxxxxxxxxxxxxxx", GetModuleHandle(NULL), &percentage);
-    //glb::oSetShapeParentBody = (setShapeParentBody)mem::FindPattern((PBYTE)"\x40\x53\x48\x83\xEC\x20\x48\x8D\x05\x93\x51\x24\x00\x88\x51\x08", "xxxxxxxxxxxxxxxx", GetModuleHandle(NULL), &percentage);
-    //glb::oAddCItem = (addContextItem)mem::FindPattern((PBYTE)"\x44\x89\x44\x24\x18\x88\x54\x24\x10\x55\x56\x57\x41\x56\x48\x8D\x6C\x24\xF8\x48\x81\xEC\x08\x01\x00\x00\x4C\x8B\x15\x5F\xE5\x3B", "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx", GetModuleHandle(NULL), &percentage);
-    //glb::oIUnReadVox = (unknReadVoxData)mem::FindPattern((PBYTE)"\x48\x89\x4C\x24\x08\x55\x53\x56\x57\x41\x54\x41\x55\x41\x56\x41\x57\x48\x8D\xAC\x24\x88\xD9\xFF\xFF\xB8\x78\x27\x00\x00\xE8\x6D", "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx", GetModuleHandle(NULL), &percentage);
-    //glb::oLtDBin = (loadTDBIN)mem::FindPattern((PBYTE)"\x48\x8B\xC4\x55\x48\x8D\xA8\x58\xFF\xFF\xFF\x48\x81\xEC\xA0\x01\x00\x00\x48\xC7\x44\x24\x68\xFE\xFF\xFF\xFF\x48\x89\x58\x08\x48", "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx", GetModuleHandle(NULL), &percentage);
-    //glb::o_S140152540 = (S140152540)mem::FindPattern((PBYTE)"\x48\x89\x4C\x24\x08\x57\x48\x83\xEC\x30\x48\xC7\x44\x24\x20\xFE\xFF\xFF\xFF\x48\x89\x5C\x24\x48\x48\x89\x6C\x24\x50\x48\x89\x74\x24\x58\x41\x8B\xF0\x48\x8B\xEA\x48\x8B\xD9\xBA\x01\x00\x00\x00", "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx", GetModuleHandle(NULL), &percentage);
-    //glb::o_S1400C4F70 = (S1400C4F70)mem::FindPattern((PBYTE)"\x40\x55\x56\x57\x41\x54\x41\x55\x41\x56\x41\x57\x48\x8D\x6C\x24\xD9\x48\x81\xEC\xB0\x00\x00\x00\x48\xC7\x45\x1F\xFE\xFF\xFF\xFF", "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx", GetModuleHandle(NULL), &percentage);
-    //glb::o_S140152740 = (S140152740)mem::FindPattern((PBYTE)"\x40\x57\x48\x83\xEC\x30\x48\xC7\x44\x24\x20\xFE\xFF\xFF\xFF\x48\x89\x5C\x24\x40\x48\x8B\xF9\x48\x8D\x05\x92\xFD\x1F\x00\x48\x89", "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx", GetModuleHandle(NULL), &percentage);
-    //glb::oValidate = (validateFileExistance)mem::FindPattern((PBYTE)"\x40\x57\x48\x83\xEC\x60\x48\xC7\x44\x24\x28\xFE\xFF\xFF\xFF\x48\x89\x5C\x24\x70\x49\x8B\xF8\x48\x8B\xDA\xC7\x44\x24\x20\x00\x00\x00\x00\x48\x8D\x4C\x24\x50\xE8\xF4\xFA\x02\x00\x90\x48\x8B\xD0", "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx", GetModuleHandle(NULL), &percentage);
-    //glb::oDoQuicksave = (doQuicksave)mem::FindPattern((PBYTE)"\x40\x53\x48\x81\xEC\x90\x00\x00\x00\x48\xC7\x44\x24\x20\xFE\xFF\xFF\xFF\x48\x8B\xD9\x48\x8B\x0D\xE4\xB3\x36\x00\x48\x8B\x89\xA0", "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx", GetModuleHandle(NULL), &percentage);
-    //glb::oDoQuickload = (doQuickload)mem::FindPattern((PBYTE)"\x48\x8B\xC4\x57\x48\x83\xEC\x70\x48\xC7\x40\xA8\xFE\xFF\xFF\xFF\x48\x89\x58\x08\x48\x89\x70\x10\x48\x8B\xF1\x48\x8B\x0D\xEE\xB4", "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx", GetModuleHandle(NULL), &percentage);
-    //glb::tdConstructScreen = (constructScreen)mem::FindPattern((PBYTE)"\x40\x53\x48\x83\xEC\x20\x4C\x8B\xC2\x48\x8B\xD9\xBA\x07\x00\x00\x00\xE8\x6A\x77\x05\x00\xC7\x43\x4C\xCD\xCC\xCC\x3D\x48\x8D\x05", "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx", GetModuleHandle(NULL), &percentage);
-    //glb::oUnknGraphicsInitFunction = (unknGraphicsInitFunction)mem::FindPattern((PBYTE)"\x80\x79\x0F\x00\x74\x03\x48\x8B\x09\xE9\xBA\x7D\x14\x00", "xxxxxxxxxxxxxx", GetModuleHandle(NULL), &percentage);
-    //glb::tdInitScreenSecondary = (initScreenSecondary)mem::FindPattern((PBYTE)"\x48\x89\x5C\x24\x08\x57\x48\x83\xEC\x20\x48\x8B\xDA\x48\x8B\xF9\xE8\x3B\xA7\xFD\xFF\x48\x8D\x57\x28\x48\x8B\xCB\xE8\x4F\x94\x01", "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx", GetModuleHandle(NULL), &percentage);
-    //glb::tdRaycastCrashA = (raycastCrashA)mem::FindPattern((PBYTE)"\x48\x89\x5C\x24\x08\x48\x89\x7C\x24\x10\x55\x48\x8B\xEC\x48\x83\xEC\x70\xF3\x0F\x10\x02\x48\x8B\xF9\xF3\x41\x0F\x58\x00\xF3\x0F", "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx", GetModuleHandle(NULL), &percentage);
-    //glb::tdRaycastCrashB = (raycastCrashB)mem::FindPattern((PBYTE)"\x48\x83\xEC\x08\x4C\x8B\xD2\x4C\x8B\xC9\x8B\x52\x70\x85\x11\x75\x07\x32\xC0\x48\x83\xC4\x08\xC3\x8B\x41\x04\x23\xC2\x3B\x41\x04", "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx", GetModuleHandle(NULL), &percentage);
-
-    //glb::osub_140105F30 = (sub_140105F30)mem::FindPattern((PBYTE)"\x48\x8B\x41\x10\x48\x85\xC0\x74\x18\x0F\x1F\x80\x00\x00\x00\x00", "xxxxxxxxxxxxxxx", GetModuleHandle(NULL), &percentage);
-    //glb::osub_140146470 = (sub_140146470)mem::FindPattern((PBYTE)"\x40\x53\x48\x83\xEC\x20\x4C\x8D\x41\x28\x48\x8B\xDA\x48\x8B\x49", "xxxxxxxxxxxxxxx", GetModuleHandle(NULL), &percentage);
-    //glb::osub_140032EA0 = (sub_140032EA0)mem::FindPattern((PBYTE)"\x48\x8B\xC4\x48\x89\x58\x08\x48\x89\x68\x10\x48\x89\x70\x18\x57", "xxxxxxxxxxxxxxx", GetModuleHandle(NULL), &percentage);
-
-
-    //sadly cant sigscan for this, yet
-    //0x0041CB00 requires further investigation - looks like a table of pointers for various game functions
-
     //live = 0x0041CB00
     bool sigScanError = false;
     float percentage = 0;
@@ -369,6 +335,11 @@ void sigscanItems() {
     printIntegPercentage(percentage);
     if (!glb::oMakeHole) { sigScanError = true; }
 
+    glb::GetString = (tGetString)mem::FindPattern((PBYTE)"\x40\x53\x48\x83\xEC\x30\x49\x8B\xC0", "xxxxxxxxx", GetModuleHandle(NULL), &percentage);
+    printf_s("GetString           : %p", glb::GetString);
+    printIntegPercentage(percentage);
+    if (!glb::GetString) { sigScanError = true; }
+
     DWORD64 Log = mem::FindPattern((PBYTE)"\x80\x79\x0F\x00\x74\x03\x48\x8B\x09\x48\x8B\xD1\x48\x8D\x0D\x00\x00\x00\x00", "xxxxxxxxxxxxxxx????", GetModuleHandle(NULL), &percentage);
     printf_s("Log           : %p", &Log);
     printIntegPercentage(percentage);
@@ -382,7 +353,7 @@ void sigscanItems() {
 
     //DetourTransactionBegin();
     //DetourUpdateThread(GetCurrentThread());
-    //DetourAttach(&(PVOID&)glb::oMakeHole, test);
+    //DetourAttach(&(PVOID&)glb::Tick, test);
     //DetourTransactionCommit();
 
     if (sigScanError) {

@@ -89,13 +89,13 @@ void TDMP::Player::SetRotation(td::Vec4 rot)
 
 void TDMP::Player::CreateBodyIfNotExists()
 {
-	if (hideBody || bodyExists || glb::game->State != gameState::ingame)
+	if (hideBody || bodyExists || glb::game->State != gameState::ingame || isDead)
 		return;
 
 	Debug::print("Creating player's body", Env::Client);
 
 	spawner::freeObjectSpawnParams params = {};
-	params.attributes.push_back({ td::small_string("unbreakable"),td::small_string("") });
+	//params.attributes.push_back({ td::small_string("unbreakable"),td::small_string("") });
 	params.useUserRotation = false;
 
 	body = {};
@@ -142,16 +142,30 @@ bool TDMP::Player::IsMe()
 	return SteamId == SteamUser()->GetSteamID();
 }
 
-void TDMP::Player::Frame()
+void TDMP::Player::Frame() { }
+
+void TDMP::Player::LuaTick()
 {
 	// Explain: "Set" functions applies last received transform data to the player and his body object.
 	// So it won't fall down if there is a latency or something else, and also won't jitter because of the physics
 	SetPosition(Position);
 	SetRotation(Rotation);
-}
 
-void TDMP::Player::LuaTick()
-{
+	if (hp <= 0 && !isDead)
+	{
+		isDead = true;
+
+		for (TDShape* cShape : body.shapes) {
+			cShape->collide = true;
+		}
+
+		LUA::RunLuaHooks("PlayerDied", ("[" + steamIdStr + "," + std::to_string(id) + "]").c_str());
+
+		bodyExists = false;
+	}
+	else if (hp >= .9f)
+		isDead = false;
+
 	if (!IsMe())
 	{
 		if (currentVehicle != 0)
@@ -162,27 +176,28 @@ void TDMP::Player::LuaTick()
 			currentVehicle->m_RemoteHandbrake = vehicleInput.handbrake;
 		}
 
+		// multi-thread problem: heldItem changes
 		if (heldItem != lastItem)
 		{
-			if (toolBodyExists)
-			{
-				toolBodyExists = false;
-
+			if (toolBody.body != 0)
 				toolBody.body->Destroy(toolBody.body, true);
-			}
 
-			std::string path = LUA::GetToolPath(heldItem);
+			Debug::print("Checking tool " + heldItem);
+			LUA::tool* toolData = LUA::GetTool(heldItem);
 			lastItem = heldItem;
 
-			if (path != "")
+			Debug::print("Checking toolData ");
+			if (toolData != nullptr)
 			{
+				Debug::print("Spawning tool");
+
 				spawner::freeObjectSpawnParams params = {};
 				params.attributes.push_back({ td::small_string("unbreakable"),td::small_string("") });
 				params.useUserRotation = false;
 
-				toolBodyExists = true;
+				//toolBodyExists = true;
 				toolBody = {};
-				spawner::spawnFreeEntity(path, params, &toolBody, .5f);
+				spawner::spawnFreeEntity(toolData->voxPath, params, &toolBody, toolData->scale);
 
 				for (TDShape* cShape : toolBody.shapes) {
 					for (spawner::objectAttribute att : params.attributes) {
@@ -197,7 +212,7 @@ void TDMP::Player::LuaTick()
 				toolBody.body->RotationVelocity = vec3Zero;
 			}
 		}
-		else if (toolBodyExists)
+		else if (toolBody.body != 0)
 		{
 			/*toolBody.body->Position = ToolPosition;
 

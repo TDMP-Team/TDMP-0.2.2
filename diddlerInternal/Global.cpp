@@ -93,6 +93,8 @@ namespace glb {
 	spawnFire oSpawnFire;
 	createProjectile oPewpew;
 
+	tGetString GetString;
+
 	tMakeHole oMakeHole;
 	convertPath oConvertPath;
 

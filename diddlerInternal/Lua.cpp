@@ -806,13 +806,13 @@ void Time(CScriptCore* pSC, lua_State*& L, CRetInfo* ret)
 	ret->retCount = 1;
 }
 
-std::map<std::string, std::string> toolsModels{};
-std::string LUA::GetToolPath(std::string toolName)
+std::map<std::string, LUA::tool> toolsModels{};
+LUA::tool* LUA::GetTool(std::string toolName)
 {
 	if (toolsModels.count(toolName))
-		return toolsModels[toolName];
+		return &toolsModels[toolName];
 	else
-		return "";
+		return nullptr;
 }
 
 std::string convertLuaPath(std::string luaPath, CScriptCore* pSC)
@@ -837,7 +837,8 @@ void RegisterTool(CScriptCore* pSC, lua_State*& L, CRetInfo* ret)
 {
 	const char* tool = luaL_checkstring(L, 1);
 	const char* path = luaL_checkstring(L, 2);
-	lua_pop(L, 2);
+	float scale = luaL_optnumber(L, 3, 0.5f);
+	lua_pop(L, 3);
 
 	std::string sPath(path);
 	if (sPath.substr(sPath.size() - 4, sPath.size()) != std::string(".vox") || sPath.find(":") != std::string::npos) // ":" prevents from using C:/ or http:/ or file:/ and etc
@@ -849,7 +850,7 @@ void RegisterTool(CScriptCore* pSC, lua_State*& L, CRetInfo* ret)
 
 	std::string realPath = convertLuaPath(sPath, pSC);
 
-	toolsModels[tool] = realPath;
+	toolsModels[tool] = LUA::tool{realPath, scale};
 }
 
 void GetToolBody(CScriptCore* pSC, lua_State*& L, CRetInfo* ret)
@@ -865,7 +866,7 @@ void GetToolBody(CScriptCore* pSC, lua_State*& L, CRetInfo* ret)
 	}
 
 	TDMP::Player ply = TDMP::players[id];
-	lua_pushnumber(L, ply.toolBodyExists && ply.toolBody.body != 0 ? (ply.toolBody.body->Id) : 0);
+	lua_pushnumber(L, ply.toolBody.body != 0 ? (ply.toolBody.body->Id) : 0);
 
 	ret->retCount = 1;
 }
@@ -962,7 +963,6 @@ void FindShape(CScriptCore* pSC, lua_State*& L, CRetInfo* ret)
 	}
 }
 
-// TODO
 void WeldBodies(CScriptCore* pSC, lua_State*& L, CRetInfo* ret)
 {
 	int parentBodyId = luaL_checkinteger(L, 1);
@@ -1087,7 +1087,7 @@ void hRegisterGameFunctions(CScriptCore* pSC)
 {
 	glb::RegisterGameFunctions(pSC);
 
-	TDMP::Debug::print("Registering lua functions");
+	TDMP::Debug::print(std::string("Registering lua functions for ") + pSC->m_ScriptLocation.c_str());
 
 	LUA::RegisterLuaCFunctions(&pSC->m_SCLuaState);
 }

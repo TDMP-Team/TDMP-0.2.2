@@ -76,6 +76,8 @@ typedef __int64(__fastcall* constructScreen)(TDScreen* a1, uintptr_t a2);
 typedef __int64(__fastcall* unknGraphicsInitFunction)(void* a1);
 typedef void*(__fastcall* initScreenSecondary)(void* a1, void* a2, void* a3);
 
+typedef void*(__fastcall* tGetString)(void* registry, td::small_string* out, td::small_string* keyName);
+
 //lua
 typedef void* (__fastcall* TluaAlloc)(void* userData, void* ptr, size_t oldSize, size_t newSize);
 typedef void (*tRegisterGameFunctions)		(CScriptCore* pScriptCore);
@@ -229,6 +231,8 @@ namespace glb {
     extern rayCast oRC;
     extern spawnFire oSpawnFire;
     extern createProjectile oPewpew;
+
+    extern tGetString GetString;
 
     extern tMakeHole oMakeHole;
     extern convertPath oConvertPath;

@@ -176,9 +176,16 @@ byte* pixelBuffer;
 int lightness = 0;
 
 int newRes = 100;
+bool glInit = false;
 bool hwglSwapBuffers(_In_ HDC hDc)
 {
-	std::call_once(swapBuffersInit, onSwapBuffersInit);
+	if (!glInit)
+	{
+		glInit = true;
+
+		onSwapBuffersInit();
+	}
+	//std::call_once(swapBuffersInit, onSwapBuffersInit);
 
 	if (needToLoadObjects) {
 		needToLoadObjects = false;
