@@ -121,6 +121,9 @@ struct playerInGameLoopSync
 std::vector<playerInGameLoopSync> playerQueue;
 void TDMP::Client::LuaTick()
 {
+	if (glb::game->State != gameState::ingame)
+		return;
+	
 	/*int recPlayers = playerQueue.size();
 	if (recPlayers > 0)
 	{
@@ -213,8 +216,6 @@ void TDMP::Client::LuaTick()
 			players[i].Frame();
 		}
 	}
-
-	ReceiveNetData();
 }
 
 void TDMP::Client::Tick()
@@ -225,7 +226,7 @@ void TDMP::Client::Tick()
 		return;
 
 	// We need to receieve amy data evem of we're in main menu
-	//ReceiveNetData();
+	ReceiveNetData();
 	
 	//if (glb::game->State != gameState::ingame)
 	//	return;

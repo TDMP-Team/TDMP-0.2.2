@@ -20,6 +20,7 @@
 
 #include "../Lua.h"
 
+std::string TDMP::CurrentTool = "";
 std::string TDMP::Version = "0.2.0";
 bool TDMP::LevelLoaded = false;
 std::vector<TDBody*> TDMP::levelBodies{};

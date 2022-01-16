@@ -238,7 +238,8 @@ public:
 	//byte paddingF[0x74];
 	float health;				//0x15C - 0x160
 	byte paddingG[0x484];		//0x160 - 0x418
-	td::small_string heldItemName;		//0x3CB - 0x3D8
+	//td::small_string heldItemName;		//0x3CB - 0x3D8
+	char pad[13];
 	TDBody* toolBody;
 
 	td::Vec3 cameraEuler() {

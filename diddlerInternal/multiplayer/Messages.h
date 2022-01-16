@@ -167,7 +167,7 @@ struct MsgPlayerData
 
 		hp = glb::player->health;
 
-		const char* item = glb::player->heldItemName.c_str();
+		const char* item = TDMP::CurrentTool.c_str();
 		strncpy(heldItem, item, strlen(item) + 1);
 		heldItem[strlen(item) + 1] = '\0';
 

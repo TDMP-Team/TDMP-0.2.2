@@ -1039,11 +1039,27 @@ void WeldBodies(CScriptCore* pSC, lua_State*& L, CRetInfo* ret)
 	oldBody->Destroy(oldBody, true);
 }
 
+// TODO: Get fucking rid of that shit
+void ShareCurrentTool(CScriptCore* pSC, lua_State*& L, CRetInfo* ret)
+{
+	const char* tool = luaL_checkstring(L, 1);
+	lua_pop(L, 1);
+
+	if (strlen(tool) > 32)
+	{
+		glb::oluaL_error(L, "Tool name is too long! %d", strlen(tool));
+		
+		return;
+	}
+
+	TDMP::CurrentTool = std::string(tool);
+}
+
 void LUA::RegisterLuaCFunctions(CScriptCore_LuaState* pSCLS)
 {
 	hookQueue[(int)*pSCLS->m_LuaState] = std::vector<callHook>{};
 
-	RegisterLuaFunction(pSCLS, "TDMP_Debug_FindShape", FindShape);
+	RegisterLuaFunction(pSCLS, "TDMP_ShareCurrentTool", ShareCurrentTool);
 
 	RegisterLuaFunction(pSCLS, "TDMP_SpawnVox", SpawnVox);
 	RegisterLuaFunction(pSCLS, "TDMP_Weld", WeldBodies);

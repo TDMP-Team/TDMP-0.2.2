@@ -11,6 +11,9 @@ struct MsgBody;
 
 namespace TDMP
 {
+    // TODO: Get rid of that
+    extern std::string CurrentTool;
+
     /// <summary>
     /// Max amount player for server. Default: 6
     /// </summary>
