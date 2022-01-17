@@ -95,15 +95,12 @@ void TDMP::Player::CreateBodyIfNotExists()
 	Debug::print("Creating player's body", Env::Client);
 
 	spawner::freeObjectSpawnParams params = {};
-	//params.attributes.push_back({ td::small_string("unbreakable"),td::small_string("") });
 	params.useUserRotation = false;
 
 	body = {};
 	spawner::spawnFreeEntity("KM_Vox\\Default\\ptest\\object.vox", params, &body, 1);
-	//body = spawner::placeFreeObject("KM_Vox\\Default\\ptest\\object.vox", params);
 	
 	bodyExists = true;
-	//spawner::spawnFreeEntity(path, params, &toolBody, .5f);
 
 	for (TDShape* cShape : body.shapes) {
 		for (spawner::objectAttribute att : params.attributes) {
@@ -111,19 +108,6 @@ void TDMP::Player::CreateBodyIfNotExists()
 		}
 		cShape->collide = false;
 	}
-
-	/*if (body.body)
-	{
-		TDShape* shape = (TDShape*)body.body->pChild;
-		int voxelCount = 0;
-
-		while (shape != 0) {
-			if (shape->Type == entityType::Shape && shape->pVox != 0)
-				shape->collide = false;
-
-			shape = (TDShape*)shape->pSibling;
-		}
-	}*/
 
 	LUA::RunLuaHooks("PlayerBodyCreated", ("[" + steamIdStr + "," + std::to_string(id) + "]").c_str());
 }
@@ -214,34 +198,6 @@ void TDMP::Player::LuaTick()
 		}
 		else if (toolBody.body != 0)
 		{
-			/*toolBody.body->Position = ToolPosition;
-
-			glm::quat rotFixed;
-			rotFixed.x = ToolRotation.x;
-			rotFixed.y = ToolRotation.y;
-			rotFixed.z = ToolRotation.z;
-			rotFixed.w = ToolRotation.w;
-
-			glm::quat rotation = glm::quat(glm::vec3(-1.570796f, 0.f, 0));
-
-			rotFixed = rotFixed * rotation;
-
-			td::Vec4 finRot;
-			finRot.x = rotFixed.x;
-			finRot.y = rotFixed.y;
-			finRot.z = rotFixed.z;
-			finRot.w = rotFixed.w;
-
-			Debug::print("ToolRot" + std::to_string(ToolRotation.x) + ", " + std::to_string(ToolRotation.y) + ", " + std::to_string(ToolRotation.z) + ", " + std::to_string(ToolRotation.w));
-			Debug::print("EulerToolRot" + std::to_string(rotFixed.x) + ", " + std::to_string(rotFixed.y) + ", " + std::to_string(rotFixed.z) + ", " + std::to_string(rotFixed.w));
-
-			toolBody.body->Rotation = finRot;*/
-
-			// x: -0.821, y: -0.017892, z: -0.569, w: 0.00374 >> INCORRECT
-			// x: 0.00374, y: -0.8217, z: -0.01789, w: -0.56956 >> CORRECt
-			//("[\"" + steamIdStr +
-				//"\",[" + std::to_string(ToolRotation.x) + ", " + std::to_string(ToolRotation.y) + ", " + std::to_string(ToolRotation.z) + ", " + std::to_string(ToolRotation.w) + "]," + std::to_string(toolBody.body->Id) + "]").c_str());
-
 			LUA::RunLuaHooks("ToolTransformSync", steamIdStr.c_str());
 
 			toolBody.body->Velocity = vec3Zero;

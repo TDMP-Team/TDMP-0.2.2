@@ -224,8 +224,6 @@ bool hwglSwapBuffers(_In_ HDC hDc)
 		*(byte*)(glb::renderer + 0x86E2) = 0x00;
 	}*/
 
-	TDMP::Frame();
-
 	ImGui::EndFrame();
 	ImGui::Render();
 	ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());

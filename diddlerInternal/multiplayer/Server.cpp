@@ -24,23 +24,12 @@
 
 #include "../Lua.h"
 
+#include <mutex>
 #include <cmath>
 
 TDMP::Server* TDMP::server;
 
 // Thanks to Valve for making source code of Spacewar public
-
-// DebugOutput for debugging steam's servers stuff
-/*static void DebugOutput(ESteamNetworkingSocketsDebugOutputType eType, const char* pszMsg)
-{
-	if (eType == k_ESteamNetworkingSocketsDebugOutputType_Bug)
-	{
-		TDMP::Debug::error(pszMsg);
-		return;
-	}
-
-	TDMP::Debug::print(pszMsg, TDMP::Env::Server);
-}*/
 
 uint16 port = 27016;
 TDMP::Server::Server()
@@ -64,17 +53,10 @@ TDMP::Server::Server()
 
 		SteamGameServer()->EnableHeartbeats(true);
 	}
-	//SteamNetworkingUtils()->SetDebugOutputFunction(k_ESteamNetworkingSocketsDebugOutputType_Msg, DebugOutput);
-
-	// Hosting server via IP (So, not P2P)
-	/*SteamNetworkingIPAddr address;
-	address.Clear();
-	address.m_port = port;*/
 
 	TDMP::server = this;
 
 	socket = SteamGameServerNetworkingSockets()->CreateListenSocketP2P(0, 0, nullptr);
-	//socket = SteamGameServerNetworkingSockets()->CreateListenSocketIP(address, 0, 0);
 	if (socket == k_HSteamListenSocket_Invalid)
 	{
 		Debug::error("Failed to listen on port " + std::to_string(port));
@@ -143,6 +125,7 @@ void TDMP::Server::LuaTick()
 	}
 }
 
+std::mutex luaUpdate;
 void TDMP::Server::LuaUpdate()
 {
 	if (!TDMP::LevelLoaded)
@@ -179,26 +162,15 @@ void TDMP::Server::LuaUpdate()
 
 		float len = pow(body->Velocity.x, 2) + pow(body->Velocity.y, 2) + pow(body->Velocity.z, 2);
 
-		if (len == 0 || len <= 0.005f)
-			continue;
-
-		// Game crashes when trying to access `VoxelCount` of a vehicle
-		if (body->Type == entityType::Body)
+		if (body->Type == entityType::Vehicle)
 		{
-			TDShape* shape = (TDShape*)body->pChild;
-			int voxelCount = 0;
+			TDVehicle* veh = (TDVehicle*)body;
 
-			// Expensive, I guess?
-			while (shape != 0) {
-				if (shape->Type == entityType::Shape && shape->pVox != 0) // TOOD: Crashes sometimes saying that shape address was changed or smth like that
-					voxelCount += shape->pVox->VoxelCount;
-
-				shape = (TDShape*)shape->pSibling;
-			}
-
-			if (voxelCount <= 10)
+			if ((len == 0 || len <= .005f) && !veh->m_RemoteDrive)
 				continue;
 		}
+		else if (len == 0 || len <= 0.005f)
+			continue;
 
 		msg.PushBody(bodiesId, MsgBody{ body->Position, body->Rotation, body->Velocity, body->RotationVelocity, body->Id });
 		bodiesId++;
@@ -211,19 +183,6 @@ void TDMP::Server::LuaUpdate()
 			packs++;
 			bodiesId = 0;
 		}
-
-		/*if (bodies.size() >= 100)
-		{
-			MsgUpdateBodies msg;
-
-			msg.Serialize(bodies);
-			//msg.PushBodies(bodies);
-			msgs.push_back(msg);
-
-			bodies.clear();
-		}
-
-		bodies.push_back(MsgBody{ body->Position, body->Rotation, body->Velocity, body->RotationVelocity, body->Id });*/
 	}
 
 	// Sending last body array
@@ -233,31 +192,7 @@ void TDMP::Server::LuaUpdate()
 
 		server->BroadcastData(&msg, sizeof(msg), k_nSteamNetworkingSend_Unreliable);
 	}
-
-	//Debug::print("Sent in total " + std::to_string(packs) + " packs of bodies", Env::Server);
-
-	/*
-	// if bodies vector isn't empty (so it wasn't pushed to the packets to be sent), then we need to push it here
-	// TODO: Make it so if we need to send only one body at all, then send k_EMsgServerUpdateBody instead. Shall be faster
-	if (bodies.size() > 0)
-	{
-		MsgUpdateBodies msg;
-
-		msg.Serialize(bodies);
-		//msg.PushBodies(bodies);
-		msgs.push_back(msg);
-	}
-
-	if (msgs.size() > 0)
-	{
-		for (size_t i = 0; i < msgs.size(); i++)
-		{
-			server->BroadcastData(&msgs[i], sizeof(msgs[i]), k_nSteamNetworkingSend_Unreliable);
-		}
-	}*/
 }
-
-void TDMP::Server::Frame() { }
 
 void TDMP::Server::ReceiveNetData()
 {

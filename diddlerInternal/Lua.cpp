@@ -242,7 +242,6 @@ void LUA::CallCallbacks(const char* callbackName)
 	}
 }
 
-// TODO: Push SteamId of sender to the server
 void LUA::CallEvent(const char* eventName, const char* jsonData, std::string steamId)
 {
 	for (size_t i = 0; i < callbacks.size(); i++)
@@ -1043,7 +1042,26 @@ void WeldBodies(CScriptCore* pSC, lua_State*& L, CRetInfo* ret)
 void ShareCurrentTool(CScriptCore* pSC, lua_State*& L, CRetInfo* ret)
 {
 	const char* tool = luaL_checkstring(L, 1);
-	lua_pop(L, 1);
+
+	lua_rawgeti(L, 2, 1);
+	lua_rawgeti(L, 2, 2);
+	lua_rawgeti(L, 2, 3);
+
+	float posX = lua_tonumber(L, -3);
+	float posY = lua_tonumber(L, -2);
+	float posZ = lua_tonumber(L, -1);
+
+	lua_rawgeti(L, 3, 1);
+	lua_rawgeti(L, 3, 2);
+	lua_rawgeti(L, 3, 3);
+	lua_rawgeti(L, 3, 4);
+
+	float rotW = lua_tonumber(L, -4);
+	float rotX = lua_tonumber(L, -3);
+	float rotY = lua_tonumber(L, -2);
+	float rotZ = lua_tonumber(L, -1);
+
+	lua_pop(L, lua_gettop(L));
 
 	if (strlen(tool) > 32)
 	{
@@ -1053,6 +1071,8 @@ void ShareCurrentTool(CScriptCore* pSC, lua_State*& L, CRetInfo* ret)
 	}
 
 	TDMP::CurrentTool = std::string(tool);
+	TDMP::toolPos = td::Vec3{ posX, posY, posZ };
+	TDMP::toolRot = td::Vec4{ rotW, rotX, rotY, rotZ };
 }
 
 void LUA::RegisterLuaCFunctions(CScriptCore_LuaState* pSCLS)

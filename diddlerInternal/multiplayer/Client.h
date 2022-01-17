@@ -28,9 +28,9 @@ namespace TDMP
 
 		void Tick();
 
-		void Frame();
-
 		void LuaTick();
+
+		void LuaUpdate();
 
 		/// <summary>
 		/// Recieves incoming network data

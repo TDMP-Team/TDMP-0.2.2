@@ -15,8 +15,6 @@
 
 #include "../Lua.h"
 
-std::mutex playerSyncMutex;
-
 TDMP::Client* TDMP::client;
 std::vector<std::string> TDMP::packets;
 
@@ -107,7 +105,10 @@ void TDMP::Client::SendData(const void* pData, uint32 nSizeOfData, int nSendFlag
 }
 
 std::vector<LuaCallbackQueue> clientCallbackQueue;
+std::mutex clientCallbackMutex;
+
 std::vector<MsgSledgeHit> sledgeQueue;
+std::mutex sledgeQueueMutex;
 
 // Since steam receiving data in different thread, we need to set received heldItem inside game's loop (i.e. before player's LuaTick)
 struct playerInGameLoopSync
@@ -159,6 +160,7 @@ void TDMP::Client::LuaTick()
 	{
 		for (size_t i = 0; i < bodies; i++)
 		{
+			MsgBody data = bodyQueue[i];
 			TDBody* body = TDMP::levelBodies[levelBodiesById[bodyQueue[i].id]];
 			if (body == glb::player->grabbedBody)
 				continue;
@@ -193,8 +195,10 @@ void TDMP::Client::LuaTick()
 
 	if (serverHandle == k_HSteamNetConnection_Invalid)
 		return;
-	// Player's transform sync
 
+	ReceiveNetData();
+
+	// Player's transform sync
 	MsgPlayerData msg;
 
 	glm::quat rot(glm::vec3(0, (-glb::player->camYaw), -1.57f));
@@ -227,22 +231,6 @@ void TDMP::Client::Tick()
 
 	// We need to receieve amy data evem of we're in main menu
 	ReceiveNetData();
-	
-	//if (glb::game->State != gameState::ingame)
-	//	return;
-}
-
-// TODO: Remove Frame() functions at all
-void TDMP::Client::Frame()
-{
-	/*
-	// Should be true when we was on the server and on the map and returned to the main menu
-	if (glb::game->State != gameState::ingame && TDMP::LevelLoaded && serverHandle != k_HSteamNetConnection_Invalid)
-		return;
-
-	if (serverHandle == k_HSteamNetConnection_Invalid || glb::game->State != gameState::ingame || !TDMP::LevelLoaded)
-		return;
-		*/
 }
 
 void TDMP::Client::Connect(uint64 serverID, uint32 serverIP)

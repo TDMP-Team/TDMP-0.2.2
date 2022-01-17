@@ -21,12 +21,18 @@
 #include "../Lua.h"
 
 std::string TDMP::CurrentTool = "";
-std::string TDMP::Version = "0.2.0";
+td::Vec3 TDMP::toolPos;
+td::Vec4 TDMP::toolRot;
+
+std::string TDMP::Version = "0.2.1";
+
 bool TDMP::LevelLoaded = false;
+
+std::vector<MsgBody> TDMP::bodyQueue;
 std::vector<TDBody*> TDMP::levelBodies{};
 std::map<int, int> TDMP::levelBodiesById{};
+
 TDMP::Input TDMP::localInputData;
-std::vector<MsgBody> TDMP::bodyQueue;
 
 void TDMP::Init()
 {
@@ -181,15 +187,6 @@ void TDMP::Tick()
 
 	if (TDMP::server != nullptr)
 		TDMP::server->Tick();
-}
-
-void TDMP::Frame()
-{
-	if (TDMP::client != nullptr)
-		TDMP::client->Frame();
-
-	if (TDMP::server != nullptr)
-		TDMP::server->Frame();
 }
 
 void TDMP::LuaTick()

@@ -147,12 +147,15 @@ struct MsgPlayerData
 			curVeh.id = glb::scene->m_CurrentVehicle->Id;
 		}
 
-		if (glb::player->toolBody != 0)
+		/*if (glb::player->toolBody != 0)
 		{
 			toolExists = true;
 			toolPos = glb::player->toolBody->Position;
 			toolRot = glb::player->toolBody->Rotation;
-		}
+		}*/
+		toolExists = true;
+		toolPos = TDMP::toolPos;
+		toolRot = TDMP::toolRot;
 
 		// It sucks. It sucks so much. If Teardown would have function like DragBody(cameraPos, cameraDirector), then it would be a lot better
 		if (!TDMP::IsServer() && glb::player->grabbedBody != 0 && TDMP::levelBodiesById.count(glb::player->grabbedBody->Id))
@@ -167,7 +170,7 @@ struct MsgPlayerData
 
 		hp = glb::player->health;
 
-		const char* item = TDMP::CurrentTool.c_str();
+		const char* item = TDMP::CurrentTool.c_str(); // glb::player->heldItemName.c_str();
 		strncpy(heldItem, item, strlen(item) + 1);
 		heldItem[strlen(item) + 1] = '\0';
 
