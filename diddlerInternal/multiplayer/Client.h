@@ -40,7 +40,7 @@ namespace TDMP
 		/// <summary>
 		/// Connects to the server using its SteamID
 		/// </summary>
-		void Connect(uint64 serverID, uint32 serverIP);
+		void Connect(CSteamID id);
 
 		/// <summary>
 		/// Disconnects from the server (NOT lobby)

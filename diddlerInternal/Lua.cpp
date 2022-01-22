@@ -110,7 +110,6 @@ void Tick(CScriptCore* pSC, lua_State*& L, CRetInfo* ret)
 std::vector<LUA::Callback> LUA::callbacks{};
 void RegisterCallback(CScriptCore* pSC, lua_State*& L, CRetInfo* ret)
 {
-	TDMP::Debug::print(L);
 	int top = lua_gettop(L);
 
 	const char* callbackName = luaL_checkstring(L, 1);
@@ -1075,6 +1074,15 @@ void ShareCurrentTool(CScriptCore* pSC, lua_State*& L, CRetInfo* ret)
 	TDMP::toolRot = td::Vec4{ rotW, rotX, rotY, rotZ };
 }
 
+void GetHost(CScriptCore* pSC, lua_State*& L, CRetInfo* ret)
+{
+	CSteamID id = SteamMatchmaking()->GetLobbyOwner(TDMP::lobby->id);
+	
+	pushplayer(L, TDMP::playersBySteamId[std::to_string(id.ConvertToUint64()).c_str()]);
+
+	ret->retCount = 1;
+}
+
 void LUA::RegisterLuaCFunctions(CScriptCore_LuaState* pSCLS)
 {
 	hookQueue[(int)*pSCLS->m_LuaState] = std::vector<callHook>{};
@@ -1086,6 +1094,7 @@ void LUA::RegisterLuaCFunctions(CScriptCore_LuaState* pSCLS)
 	RegisterLuaFunction(pSCLS, "TDMP_RegisterToolVox", RegisterTool);
 
 	RegisterLuaFunction(pSCLS, "TDMP_GetLobbyMembers", GetLobbyMembers);
+	RegisterLuaFunction(pSCLS, "TDMP_GetLobbyHost", GetHost);
 
 	RegisterLuaFunction(pSCLS, "TDMP_ConPrint", ConsolePrint);
 	RegisterLuaFunction(pSCLS, "TDMP_UnixTime", Time);

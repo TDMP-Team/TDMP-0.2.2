@@ -21,6 +21,12 @@ TDMP::Lobby::Lobby(uint64 lobbyID) :
 	SteamMatchmaking()->SetLobbyData(id, "game_starting", "0");
 
 	UpdateData();
+
+	const DWORD buffSize = 65535;
+	static char buffer[buffSize];
+	GetEnvironmentVariableA("SteamAppId", buffer, buffSize);
+
+	Debug::print(buffer);
 }
 
 TDMP::Lobby::~Lobby()
@@ -32,7 +38,7 @@ void TDMP::Lobby::OnLobbyGameCreated(LobbyGameCreated_t* pCallback)
 {
 	ChatHistory.clear();
 
-	TDMP::client->Connect(pCallback->m_ulSteamIDGameServer, pCallback->m_unIP);
+	TDMP::client->Connect(pCallback->m_ulSteamIDGameServer);
 }
 
 void TDMP::Lobby::Leave()

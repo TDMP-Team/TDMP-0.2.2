@@ -160,21 +160,16 @@ void TDMP::Player::LuaTick()
 			currentVehicle->m_RemoteHandbrake = vehicleInput.handbrake;
 		}
 
-		// multi-thread problem: heldItem changes
 		if (heldItem != lastItem)
 		{
 			if (toolBody.body != 0)
 				toolBody.body->Destroy(toolBody.body, true);
 
-			Debug::print("Checking tool " + heldItem);
 			LUA::tool* toolData = LUA::GetTool(heldItem);
 			lastItem = heldItem;
 
-			Debug::print("Checking toolData ");
 			if (toolData != nullptr)
 			{
-				Debug::print("Spawning tool");
-
 				spawner::freeObjectSpawnParams params = {};
 				params.attributes.push_back({ td::small_string("unbreakable"),td::small_string("") });
 				params.useUserRotation = false;

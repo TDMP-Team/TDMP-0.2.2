@@ -6,7 +6,6 @@
 #include "objectSpawner.h"
 #include "maths.h"
 #include "constClock.h"
-#include "console.h"
 #include "multiplayer/Main.h"
 
 #pragma comment(lib, "glew32s.lib")
@@ -54,7 +53,7 @@ LRESULT APIENTRY hWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 
 	ImGui_ImplWin32_WndProcHandler(hWnd, uMsg, wParam, lParam);
 
-	if (glb::displayMenu || lockoutScroll || console::consoleOpen)
+	if (glb::displayMenu || lockoutScroll)
 	{
 		return true;
 	}
@@ -64,7 +63,7 @@ LRESULT APIENTRY hWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 
 bool hwCursor(int x, int y) {
 
-	if (glb::displayMenu || !glb::isGameFocused || console::consoleOpen) {
+	if (glb::displayMenu || !glb::isGameFocused) {
 		return false;
 	}
 
@@ -185,44 +184,16 @@ bool hwglSwapBuffers(_In_ HDC hDc)
 
 		onSwapBuffersInit();
 	}
-	//std::call_once(swapBuffersInit, onSwapBuffersInit);
-
-	if (needToLoadObjects) {
-		needToLoadObjects = false;
-		spawner::spawnerObjectsDatabase = spawner::enumerateSpawnableObjects();
-	}
 
 	ImGui_ImplOpenGL3_NewFrame();
 	ImGui_ImplWin32_NewFrame();
 	ImGui::NewFrame();
 	ImGuiIO* IO = &ImGui::GetIO();
-	IO->MouseDrawCursor = (glb::displayMenu || console::consoleOpen);
-	console::drawConsole();
+	IO->MouseDrawCursor = (glb::displayMenu);
 
 	if (showingWelcome) {
 		showWelcomeMessage();
 	}
-
-	/*if (showBounds) {
-		*(byte*)(glb::renderer + 0x86E0) = 0x01;
-	}
-	else {
-		*(byte*)(glb::renderer + 0x86E0) = 0x00;
-	}
-
-	if (showBodes) {
-		*(byte*)(glb::renderer + 0x86E1) = 0x01;
-	}
-	else {
-		*(byte*)(glb::renderer + 0x86E1) = 0x00;
-	}
-
-	if (showShapes) {
-		*(byte*)(glb::renderer + 0x86E2) = 0x01;
-	}
-	else {
-		*(byte*)(glb::renderer + 0x86E2) = 0x00;
-	}*/
 
 	ImGui::EndFrame();
 	ImGui::Render();

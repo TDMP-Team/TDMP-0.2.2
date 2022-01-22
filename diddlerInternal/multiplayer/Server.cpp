@@ -125,7 +125,6 @@ void TDMP::Server::LuaTick()
 	}
 }
 
-std::mutex luaUpdate;
 void TDMP::Server::LuaUpdate()
 {
 	if (!TDMP::LevelLoaded)
@@ -369,10 +368,17 @@ void TDMP::Server::OnConnectionStatusChanged(SteamNetConnectionStatusChangedCall
 
 			if (ClientData[i].SteamIDUser == info.m_identityRemote.GetSteamID())
 			{
+				ClientData[i].Active = false;
+
 				// Flush all others messages of connection
 				SteamGameServerNetworkingSockets()->FlushMessagesOnConnection(ClientData[i].handle);
 
+				// and then clean it
+				memset(&PendingClientData[i], 0, sizeof(ClientConnectionData_t));
+				PendingClientData[i].Active = false;
+
 				Debug::print("Player " + std::to_string(ClientData[i].SteamIDUser.ConvertToUint64()) + " disconnected", Env::Server);
+				SteamGameServer()->EndAuthSession(info.m_identityRemote.GetSteamID());
 
 				MsgClientExiting msg;
 				msg.SetPlayer(ClientData[i].SteamIDUser);
@@ -382,6 +388,8 @@ void TDMP::Server::OnConnectionStatusChanged(SteamNetConnectionStatusChangedCall
 
 				SteamGameServerNetworkingSockets()->CloseConnection(ClientData[i].handle, k_ESteamNetConnectionEnd_App_Min + 1, nullptr, false);
 				memset(&ClientData[i], 0, sizeof(ClientConnectionData_t));
+
+				break;
 			}
 		}
 	}

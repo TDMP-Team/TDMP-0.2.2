@@ -17,7 +17,7 @@ namespace cHandler {
 		localtime_s(&tstruct, &now);
 		strftime(timeBuffer, 25, "%c", &tstruct);
 		std::string consoleOutput = std::string(timeBuffer);
-		free(timeBuffer);
+		delete[] timeBuffer;
 		return consoleOutput;
 	}
 
@@ -27,8 +27,8 @@ namespace cHandler {
 		struct tm  tstruct;
 		localtime_s(&tstruct, &now);
 		strftime(timeBuffer, 25, "%F-%H-%M", &tstruct);
-		std::string consoleOutput = "KM-Crash-" + std::string(timeBuffer) + ".txt";
-		free(timeBuffer);
+		std::string consoleOutput = "TDMP-Crash-" + std::string(timeBuffer) + ".txt";
+		delete[] timeBuffer;
 		return consoleOutput;
 	}
 
@@ -208,11 +208,6 @@ namespace cHandler {
 		crashDump << "oIsActiveWindow      : " << std::hex << glb::oIsActive << std::endl;
 		crashDump << "update shape body    : " << std::hex << glb::tdUpdateShapeBody << std::endl;
 		crashDump << std::endl;
-
-		crashDump << "Vox database size     : " << spawner::spawnerObjectsDatabase.size() << std::endl;
-		for (spawner::spawnerCatagory& sc : spawner::spawnerObjectsDatabase) {
-			crashDump << "  [" << sc.name << " : " << std::to_string(sc.objects.size()) << "]" << std::endl;
-		}
 
 		crashDump << std::endl;
 		crashDump << "BEGIN MODULE MEMORY DUMPS:" << std::endl;

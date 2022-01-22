@@ -110,31 +110,12 @@ std::mutex clientCallbackMutex;
 std::vector<MsgSledgeHit> sledgeQueue;
 std::mutex sledgeQueueMutex;
 
-// Since steam receiving data in different thread, we need to set received heldItem inside game's loop (i.e. before player's LuaTick)
-struct playerInGameLoopSync
-{
-	std::string heldItem;
-
-	int id;
-};
-
-// looks bad though. Need to turn LuaTick into GameTick
-std::vector<playerInGameLoopSync> playerQueue;
 void TDMP::Client::LuaTick()
 {
 	if (glb::game->State != gameState::ingame)
 		return;
-	
-	/*int recPlayers = playerQueue.size();
-	if (recPlayers > 0)
-	{
-		for (size_t i = 0; i < recPlayers; i++)
-		{
-			players[playerQueue[i].id].heldItem = playerQueue[i].heldItem;
-		}
 
-		playerQueue.clear();
-	}*/
+	ReceiveNetData();
 	
 	for (uint32 i = 0; i < MaxPlayers; ++i)
 	{
@@ -229,11 +210,14 @@ void TDMP::Client::Tick()
 	if (serverHandle == k_HSteamNetConnection_Invalid)
 		return;
 
+	if (glb::game->State == gameState::ingame)
+		return;
+
 	// We need to receieve amy data evem of we're in main menu
 	ReceiveNetData();
 }
 
-void TDMP::Client::Connect(uint64 serverID, uint32 serverIP)
+void TDMP::Client::Connect(CSteamID serverID)
 {
 	if (connectionState != k_EClientNotConnected)
 	{
@@ -244,26 +228,23 @@ void TDMP::Client::Connect(uint64 serverID, uint32 serverIP)
 	SteamNetworkingIdentity identity;
 	identity.SetSteamID(serverID);
 	serverHandle = SteamNetworkingSockets()->ConnectP2P(identity, 0, 0, nullptr);
-	/*SteamNetworkingIPAddr address;
-	address.Clear();
-	address.SetIPv4(serverIP, 27016);*/
-
-	//serverHandle = SteamNetworkingSockets()->ConnectByIPAddress(address, 0, nullptr);
 
 	connectionState = k_EClientConnecting;
 
-	Debug::print("Game started, connecting to the server", Env::Client);
+	Debug::print("Connecting to the server", Env::Client);
 }
 
 void TDMP::Client::Disconnect()
 {
-	if (serverHandle == k_HSteamNetConnection_Invalid || TDMP::IsServer())
+	if (serverHandle == k_HSteamNetConnection_Invalid)// || TDMP::IsServer())
 	{
 		connectionState = k_EClientNotConnected;
 		serverHandle = k_HSteamNetConnection_Invalid;
 
 		return;
 	}
+
+	Debug::print("Leaving the server", Env::Client);
 
 	SteamNetworkingSockets()->CloseConnection(serverHandle, 0, nullptr, false);
 	connectionState = k_EClientNotConnected;
@@ -412,15 +393,15 @@ void TDMP::Client::HandleData(EMessage eMsg, SteamNetworkingMessage_t* message)
 		{
 			if (levelBodiesById.count(pMsg->GetBodies()[i].id))
 			{
-				TDMP::bodyQueue.push_back(MsgBody{
+				/*TDMP::bodyQueue.push_back(MsgBody{
 					pMsg->GetBodies()[i].pos,
 					pMsg->GetBodies()[i].rot,
 					pMsg->GetBodies()[i].vel,
 					pMsg->GetBodies()[i].rotVel,
 
 					pMsg->GetBodies()[i].id
-				});
-				/*TDBody* body = TDMP::levelBodies[levelBodiesById[pMsg->GetBodies()[i].id]];
+				});*/
+				TDBody* body = TDMP::levelBodies[levelBodiesById[pMsg->GetBodies()[i].id]];
 
 				body->isAwake = true;
 				body->countDown = 0x0F;
@@ -428,7 +409,7 @@ void TDMP::Client::HandleData(EMessage eMsg, SteamNetworkingMessage_t* message)
 				body->Position = pMsg->GetBodies()[i].pos;
 				body->Rotation = pMsg->GetBodies()[i].rot;
 				body->Velocity = pMsg->GetBodies()[i].vel;
-				body->RotationVelocity = pMsg->GetBodies()[i].rotVel;*/
+				body->RotationVelocity = pMsg->GetBodies()[i].rotVel;
 			}
 		}
 
@@ -479,7 +460,10 @@ void TDMP::Client::HandleData(EMessage eMsg, SteamNetworkingMessage_t* message)
 			break;
 		}
 
-		clientCallbackQueue.push_back(LuaCallbackQueue{ std::string(pMsg->GetCallback()), std::string(pMsg->GetJson()) });
+		clientCallbackQueue.push_back(LuaCallbackQueue{
+			std::string(pMsg->GetCallback()),
+			std::string(pMsg->GetJson())
+		});
 		
 		break;
 	}

@@ -157,6 +157,12 @@ struct MsgPlayerData
 		toolPos = TDMP::toolPos;
 		toolRot = TDMP::toolRot;
 
+		//const DWORD buffSize = 65535;
+		//static char buffer[buffSize];
+		//GetEnvironmentVariableA("SteamAppId", buffer, buffSize);
+
+		//TDMP::Debug::print(buffer);
+
 		// It sucks. It sucks so much. If Teardown would have function like DragBody(cameraPos, cameraDirector), then it would be a lot better
 		if (!TDMP::IsServer() && glb::player->grabbedBody != 0 && TDMP::levelBodiesById.count(glb::player->grabbedBody->Id))
 		{

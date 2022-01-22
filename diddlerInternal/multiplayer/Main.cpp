@@ -24,7 +24,7 @@ std::string TDMP::CurrentTool = "";
 td::Vec3 TDMP::toolPos;
 td::Vec4 TDMP::toolRot;
 
-std::string TDMP::Version = "0.2.1";
+std::string TDMP::Version = "0.2.2";
 
 bool TDMP::LevelLoaded = false;
 
@@ -44,12 +44,6 @@ void TDMP::Init()
 	{
 		Debug::print("Steam's API was initialized(" + std::to_string(SteamUser()->GetSteamID().ConvertToUint64()) + ")");
 		std::setlocale(LC_NUMERIC, "C");
-
-		const DWORD buffSize = 65535;
-		static char buffer[buffSize];
-		GetEnvironmentVariableA("SteamAppId", buffer, buffSize);
-
-		Debug::print(buffer);
 		
 		new Client();
 	}
@@ -66,12 +60,6 @@ void TDMP::Host()
 		if (TDMP::server != nullptr)
 			return;
 		
-		if (SteamMatchmaking()->GetNumLobbyMembers(lobby->id) <= 1) // if we're alone in the lobby then don't launch the server but mark lobby as not joinable
-		{
-			//SteamMatchmaking()->SetLobbyJoinable(TDMP::lobby->id, false);
-			//return;
-		}
-
 		new Server();
 	}
 }
@@ -148,6 +136,17 @@ void OnLoadLevel()
 	}
 
 	TDMP::Debug::print("Level loaded");
+
+	if (glb::game->State != gameState::ingame || TDMP::lobby == nullptr || TDMP::client == nullptr)
+		return;
+
+	uint32 ip;
+	uint16 port;
+	CSteamID id;
+	if (SteamMatchmaking()->GetLobbyGameServer(TDMP::lobby->id, &ip, &port, &id) && TDMP::client->connectionState == k_EClientNotConnected)
+	{
+		TDMP::client->Connect(id);
+	}
 }
 
 void TDMP::Tick()
@@ -177,9 +176,13 @@ void TDMP::Tick()
 	{
 		TDMP::Host();
 	}
-	else if (glb::game->State != gameState::ingame && TDMP::server != nullptr)
+	else if (glb::game->State != gameState::ingame)
 	{
-		TDMP::server->Shutdown();
+		if (TDMP::client != nullptr && TDMP::client->connectionState != k_EClientNotConnected)
+			TDMP::client->Disconnect();
+
+		if (TDMP::server != nullptr)
+			TDMP::server->Shutdown();
 	}
 
 	if (TDMP::client != nullptr)

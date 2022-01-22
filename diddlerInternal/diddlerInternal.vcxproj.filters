@@ -135,9 +135,6 @@
     <ClInclude Include="constClock.h">
       <Filter>Header Files\Misc</Filter>
     </ClInclude>
-    <ClInclude Include="console.h">
-      <Filter>Header Files\Misc</Filter>
-    </ClInclude>
     <ClInclude Include="multiplayer\Client.h">
       <Filter>Multiplayer</Filter>
     </ClInclude>
@@ -309,9 +306,6 @@
       <Filter>Source Files\Mods</Filter>
     </ClCompile>
     <ClCompile Include="constClock.cpp">
-      <Filter>Source Files\misc</Filter>
-    </ClCompile>
-    <ClCompile Include="console.cpp">
       <Filter>Source Files\misc</Filter>
     </ClCompile>
     <ClCompile Include="multiplayer\Client.cpp">

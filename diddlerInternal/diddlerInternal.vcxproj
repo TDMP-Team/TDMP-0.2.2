@@ -199,7 +199,6 @@
     <ClInclude Include="multiplayer\Messages.h" />
     <ClInclude Include="multiplayer\Player.h" />
     <ClInclude Include="multiplayer\Server.h" />
-    <ClInclude Include="console.h" />
     <ClInclude Include="constClock.h" />
     <ClInclude Include="detours.h" />
     <ClInclude Include="detver.h" />
@@ -267,7 +266,6 @@
     <ClCompile Include="..\lua-5.1.4\lvm.c" />
     <ClCompile Include="..\lua-5.1.4\lzio.c" />
     <ClCompile Include="..\lua-5.1.4\print.c" />
-    <ClCompile Include="console.cpp" />
     <ClCompile Include="constClock.cpp" />
     <ClCompile Include="crashHandler.cpp" />
     <ClCompile Include="dllmain.cpp" />
