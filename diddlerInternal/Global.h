@@ -202,6 +202,7 @@ namespace glb {
     extern constructScreen tdConstructScreen;
     extern updateScreen tdUpdateScreen;
     extern initScreenSecondary tdInitScreenSecondary;
+    extern float steamDrmIntegrity;
 
     extern interestingUpdateFunc tdUpdateFunc;
     extern highlightShape oHighlightShape;

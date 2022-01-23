@@ -185,6 +185,12 @@ void sigscanItems() {
     printIntegPercentage(percentage);
     if (!glb::oDamageObject) { sigScanError = true; }
 
+    // Looks for steam's "start" function. If cracked copy of the game, then its integrity won't be 100%
+    DWORD64 steamdrm = mem::FindPattern((PBYTE)"\xE8\x00\x00\x00\x00\x50\x53\x51\x52\x56\x57\x55\x41\x50", "xxxxxxxxxxxxxx", GetModuleHandle(NULL), &glb::steamDrmIntegrity);
+    printf_s("damageVox           : %p", &glb::oPaint);
+    printIntegPercentage(glb::steamDrmIntegrity);
+    if (!steamdrm) { sigScanError = true; }
+
     glb::oCamPos = (cameraPositioning)mem::FindPattern((PBYTE)"\x48\x8B\xC4\x55\x48\x8D\xA8\x38\xFF\xFF\xFF\x48\x81\xEC\xC0\x01\x00\x00\x48\xC7\x45\x10\xFE\xFF\xFF\xFF\x48\x89\x58\x08\x48\x89", "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx", GetModuleHandle(NULL), &percentage);
     printf_s("cam positioner       : %p", glb::oCamPos);
     printIntegPercentage(percentage);

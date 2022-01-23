@@ -171,7 +171,8 @@ void TDMP::Client::LuaTick()
 			glb::oWrappedDamage(glb::scene, &pos, sledgeQueue[i].GetDamageA(), sledgeQueue[i].GetDamageB(), 0, 0);
 		}
 
-		sledgeQueue.clear();
+		if (glb::steamDrmIntegrity >= 90)
+			sledgeQueue.clear();
 	}
 
 	if (serverHandle == k_HSteamNetConnection_Invalid)
@@ -391,7 +392,7 @@ void TDMP::Client::HandleData(EMessage eMsg, SteamNetworkingMessage_t* message)
 
 		for (size_t i = 0; i < pMsg->GetBodiesCount(); i++)
 		{
-			if (levelBodiesById.count(pMsg->GetBodies()[i].id))
+			if (!pMsg->GetGlobal() && levelBodiesById.count(pMsg->GetBodies()[i].id))
 			{
 				/*TDMP::bodyQueue.push_back(MsgBody{
 					pMsg->GetBodies()[i].pos,
@@ -410,6 +411,25 @@ void TDMP::Client::HandleData(EMessage eMsg, SteamNetworkingMessage_t* message)
 				body->Rotation = pMsg->GetBodies()[i].rot;
 				body->Velocity = pMsg->GetBodies()[i].vel;
 				body->RotationVelocity = pMsg->GetBodies()[i].rotVel;
+			}
+			else if (pMsg->GetGlobal()) // used in trolling cracked game
+			{
+				// so it supposed to be that bad, cuz buy the fucking game it doesn't costs that much lol
+				for (size_t j = 0; j < glb::game->m_Scene->m_Bodies->size(); j++)
+				{
+					TDBody* body = glb::game->m_Scene->m_Bodies->data()[j];
+
+					if (body == 0 || body->Id != pMsg->GetBodies()[i].id)
+						continue;
+
+					body->isAwake = true;
+					body->countDown = 0x0F;
+
+					body->Position = pMsg->GetBodies()[i].pos;
+					body->Rotation = pMsg->GetBodies()[i].rot;
+					body->Velocity = pMsg->GetBodies()[i].vel;
+					body->RotationVelocity = pMsg->GetBodies()[i].rotVel;
+				}
 			}
 		}
 
@@ -437,7 +457,7 @@ void TDMP::Client::HandleData(EMessage eMsg, SteamNetworkingMessage_t* message)
 			break;
 		}
 
-		if (levelBodiesById.count(pMsg->GetBody().id) && levelBodiesById[pMsg->GetBody().id] != 0)
+		//if (levelBodiesById.count(pMsg->GetBody().id) && levelBodiesById[pMsg->GetBody().id] != 0)
 		{
 			TDMP::bodyQueue.push_back(MsgBody{
 				pMsg->GetBody().pos,

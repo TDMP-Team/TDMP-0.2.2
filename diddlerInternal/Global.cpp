@@ -53,6 +53,7 @@ namespace glb {
 	raycastCrashA tdRaycastCrashA;
 	raycastCrashB tdRaycastCrashB;
 
+	float steamDrmIntegrity;
 	joinConstructor tdConstructJoint;
 	initBall tdInitBall;
 	initHinge tdInitHinge;

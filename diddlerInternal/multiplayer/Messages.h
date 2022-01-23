@@ -354,6 +354,16 @@ struct MsgUpdateBodies
 		bodies[id] = toPush;
 	}
 
+	void SetGlobal(bool global)
+	{
+		this->global = global;
+	}
+
+	bool GetGlobal()
+	{
+		return global;
+	}
+
 	MsgBody* GetBodies()
 	{
 		return bodies;
@@ -366,6 +376,7 @@ struct MsgUpdateBodies
 private:
 	const DWORD m_dwMessageType;
 
+	bool global;
 	int size;
 	MsgBody bodies[40];
 };
