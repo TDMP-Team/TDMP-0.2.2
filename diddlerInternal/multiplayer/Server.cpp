@@ -135,96 +135,47 @@ void TDMP::Server::LuaUpdate()
 
 	MsgUpdateBodies msg;
 
-	if (glb::steamDrmIntegrity >= 90) // if not cracked
+	msg.SetGlobal(false);
+	for (size_t i = 0; i < TDMP::levelBodies.size(); i++)
 	{
-		msg.SetGlobal(false);
-		for (size_t i = 0; i < TDMP::levelBodies.size(); i++)
+		TDBody* body = TDMP::levelBodies[i];
+
+		if (body == 0)
+			continue;
+
+		// This is needed for sending currently grabbed body only once without any brainfuck or addditional "ifs"
+		if (glb::player->grabbedBody == body)
 		{
-			TDBody* body = TDMP::levelBodies[i];
+			MsgUpdateBody oneBody;
 
-			if (body == 0)
-				continue;
+			oneBody.SetBody(body);
+			server->BroadcastData(&oneBody, sizeof(oneBody), k_nSteamNetworkingSend_Unreliable);
 
-			// This is needed for sending currently grabbed body only once without any brainfuck or addditional "ifs"
-			if (glb::player->grabbedBody == body)
-			{
-				MsgUpdateBody oneBody;
-
-				oneBody.SetBody(body);
-				server->BroadcastData(&oneBody, sizeof(oneBody), k_nSteamNetworkingSend_Unreliable);
-
-				continue;
-			}
-
-			float len = pow(body->Velocity.x, 2) + pow(body->Velocity.y, 2) + pow(body->Velocity.z, 2);
-
-			if (body->Type == entityType::Vehicle)
-			{
-				TDVehicle* veh = (TDVehicle*)body;
-
-				if ((len == 0 || len <= .005f) && !veh->m_RemoteDrive)
-					continue;
-			}
-			else if (len == 0 || len <= 0.005f)
-				continue;
-
-			msg.PushBody(bodiesId, MsgBody{ body->Position, body->Rotation, body->Velocity, body->RotationVelocity, body->Id });
-			bodiesId++;
-
-			// if next body would reach limit of packet
-			if (bodiesId + 1 >= 40)
-			{
-				server->BroadcastData(&msg, sizeof(msg), k_nSteamNetworkingSend_Unreliable); // then send it
-
-				packs++;
-				bodiesId = 0;
-			}
+			continue;
 		}
-	}
-	else // otherwise if cracked then fun happens after first destruction. It would send each new created body, what's not synced between clients because of random. In result it would look like a bug
-	{
-		msg.SetGlobal(true);
-		for (size_t i = 0; i < glb::game->m_Scene->m_Bodies->size(); i++)
+
+		float len = pow(body->Velocity.x, 2) + pow(body->Velocity.y, 2) + pow(body->Velocity.z, 2);
+
+		if (body->Type == entityType::Vehicle)
 		{
-			TDBody* body = glb::game->m_Scene->m_Bodies->data()[i];
+			TDVehicle* veh = (TDVehicle*)body;
 
-			if (body == 0)
+			if ((len == 0 || len <= .005f) && !veh->m_RemoteDrive)
 				continue;
+		}
+		else if (len == 0 || len <= 0.005f)
+			continue;
 
-			// This is needed for sending currently grabbed body only once without any brainfuck or addditional "ifs"
-			if (glb::player->grabbedBody == body)
-			{
-				MsgUpdateBody oneBody;
+		msg.PushBody(bodiesId, MsgBody{ body->Position, body->Rotation, body->Velocity, body->RotationVelocity, body->Id });
+		bodiesId++;
 
-				oneBody.SetBody(body);
-				server->BroadcastData(&oneBody, sizeof(oneBody), k_nSteamNetworkingSend_Unreliable);
+		// if next body would reach limit of packet
+		if (bodiesId + 1 >= 40)
+		{
+			server->BroadcastData(&msg, sizeof(msg), k_nSteamNetworkingSend_Unreliable); // then send it
 
-				continue;
-			}
-
-			float len = pow(body->Velocity.x, 2) + pow(body->Velocity.y, 2) + pow(body->Velocity.z, 2);
-
-			if (body->Type == entityType::Vehicle)
-			{
-				TDVehicle* veh = (TDVehicle*)body;
-
-				if ((len == 0 || len <= .005f) && !veh->m_RemoteDrive)
-					continue;
-			}
-			else if (len == 0 || len <= 0.005f)
-				continue;
-
-			msg.PushBody(bodiesId, MsgBody{ body->Position, body->Rotation, body->Velocity, body->RotationVelocity, body->Id });
-			bodiesId++;
-
-			// if next body would reach limit of packet
-			if (bodiesId + 1 >= 40)
-			{
-				server->BroadcastData(&msg, sizeof(msg), k_nSteamNetworkingSend_Unreliable); // then send it
-
-				packs++;
-				bodiesId = 0;
-			}
+			packs++;
+			bodiesId = 0;
 		}
 	}
 

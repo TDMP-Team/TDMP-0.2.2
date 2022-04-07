@@ -171,8 +171,7 @@ void TDMP::Client::LuaTick()
 			glb::oWrappedDamage(glb::scene, &pos, sledgeQueue[i].GetDamageA(), sledgeQueue[i].GetDamageB(), 0, 0);
 		}
 
-		if (glb::steamDrmIntegrity >= 90)
-			sledgeQueue.clear();
+		sledgeQueue.clear();
 	}
 
 	if (serverHandle == k_HSteamNetConnection_Invalid)

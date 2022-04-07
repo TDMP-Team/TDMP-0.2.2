@@ -117,7 +117,6 @@ typedef void(__fastcall* attachJoint)(TDJoint* joint, TDShape* shape1, TDShape* 
 typedef void(__fastcall* updateJoint)(TDJoint* joint);
 
 //misc
-typedef void(__fastcall* funRuiner)(DWORD a1, DWORD a2, DWORD a3);
 typedef void(__stdcall* damageObject)(uintptr_t a1, uintptr_t a2, td::Vec3* a3, float a4, float a5, uintptr_t a6, uintptr_t a7, uintptr_t a8);
 typedef void(__stdcall* createExplosionWrapped)(double unkn, td::Vec3* pos, float power);
 typedef void(__fastcall* spawnParticleWrapped)(double a1, __int64 a2);
@@ -136,9 +135,6 @@ typedef bool(__fastcall* isActiveWindow)(void* a1);
 typedef bool(__fastcall* createTextureThing)(void* texture, void* pixelBuffer, bool a3);
 typedef void(__fastcall* updateScreen)(TDScreen* screen);
 typedef void*(__fastcall* loadResource)(void* a1, void* a2, int a3);
-typedef void*(__fastcall* sub_140105F30)(TDScreen* screen, int a2);
-typedef void*(__fastcall* sub_140146470)(__int64 a1, __int64 a2);
-typedef void*(__fastcall* sub_140032EA0)(float* a1, __int64 a2, float* a3);
 
 //td maths
 typedef __int64(__fastcall* apiQuatEuler)(float* a1, float* a2);
@@ -149,9 +145,6 @@ typedef bool(__fastcall* doQuicksave)(TDScene* a1);
 typedef bool(__fastcall* doQuickload)(TDScene* a1);
 typedef void* (__fastcall* validateFileExistance)(__int64 a1, void* a2, td::small_string* path);
 typedef char(__fastcall* loadTDBIN)(__int64 a1, td::small_string* a2);
-typedef __int64(__fastcall* S140152540)(__int64 a1, __int64 a2, __int64 a3);
-typedef __int64(__fastcall* S1400C4F70)(__int64 a1, __int64 a2);
-typedef void*(__fastcall* S140152740)(void* a1);
 
 //SEE TDFUNCS.CPP FOR SIGSCANNING
 namespace glb {
@@ -160,9 +153,6 @@ namespace glb {
     extern bool isGameFocused;
 
     extern loadTDBIN oLtDBin;
-    extern S140152540 o_S140152540;
-    extern S1400C4F70 o_S1400C4F70;
-    extern S140152740 o_S140152740;
     extern validateFileExistance oValidate;
     extern doQuicksave oDoQuicksave;
     extern doQuickload oDoQuickload;
@@ -172,10 +162,6 @@ namespace glb {
     extern loadResource oLoadResource;
     extern raycastCrashA tdRaycastCrashA;
     extern raycastCrashB tdRaycastCrashB;
-
-    extern sub_140105F30 osub_140105F30;
-    extern sub_140146470 osub_140146470;
-    extern sub_140032EA0 osub_140032EA0;
 
     extern TDObjectList* TDOL;
     extern TDPlayer* player;
@@ -190,7 +176,6 @@ namespace glb {
     extern unknReadVoxData oIUnReadVox;
     extern isActiveWindow oIsActive;
 
-    extern funRuiner tdFunRuiner;
     extern joinConstructor tdConstructJoint;
     extern initBall tdInitBall;
     extern initHinge tdInitHinge;

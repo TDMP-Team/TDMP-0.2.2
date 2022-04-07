@@ -256,11 +256,6 @@ void sigscanItems() {
     printIntegPercentage(percentage);
     if (!glb::tdUpdateFunc) { sigScanError = true; }
 
-    glb::tdFunRuiner = (funRuiner)mem::FindPattern((PBYTE)"\x48\x8B\xC4\x55\x41\x54\x41\x55\x41\x56\x41\x57\x48\x8D\xA8\x28", "xxxxxxxxxxxxxxxx", GetModuleHandle(NULL), &percentage);
-    printf_s("fun ruiner           : %p", glb::tdFunRuiner);
-    printIntegPercentage(percentage);
-    if (!glb::tdFunRuiner) { sigScanError = true; }
-
     glb::RegisterGameFunctions = (tRegisterGameFunctions)mem::FindPattern((PBYTE)"\x40\x57\x48\x83\xEC\x40\x48\xC7\x44\x24\x00\x00\x00\x00\x00\x48\x89\x5C\x24\x00\x48\x8D\x79\x30", "xxxxxxxxxx?????xxxx?xxxx", GetModuleHandle(NULL), &percentage);
     printf_s("RegisterGameFunctions           : %p", glb::RegisterGameFunctions);
     printIntegPercentage(percentage);
