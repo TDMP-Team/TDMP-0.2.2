@@ -125,19 +125,12 @@ namespace spawner {
 	};
 
 	void switchRotationStep(WPARAM wParam);
-	spawnedObject throwFreeObject(std::string filepath, thrownObjectSpawnParams params);
 	spawnedObject placeChildObject(std::string filepath, childObjectSpawnParams params = {});
 	bool spawnChildEntity(std::string filepath, childObjectSpawnParams params, spawnedObject* object);
 	spawnedObject placeFreeObject(std::string filepath, freeObjectSpawnParams params = {});
-	bool spawnFreeEntity(std::string filepath, freeObjectSpawnParams params, spawnedObject* object);
-	void deleteLastObject();
+	bool spawnFreeEntity(std::string filepath, freeObjectSpawnParams params, spawnedObject* object, float scale = 1);
 	KMSpawnedObject spawnObjectProxy(std::string path, objectSpawnerParams params);
 	void processMostRecentObject();
-	std::vector<spawnerCatagory> enumerateSpawnableObjects();
-	std::vector<spawnerCatagory> enumerateWireObjects();
 	KMSpawnedObject spawnEntity(std::string filepath, objectSpawnerParams osp);
 	bool updateShapeBody(TDShape* shape, TDBody* body);
-	spawnedObject placeDuplicateObject(TDVox* cloneTarget);
-	bool spawnDuplicatedObject(TDVox* cloneTarget, freeObjectSpawnParams params, spawnedObject* object);
-	extern std::vector<spawner::spawnerCatagory> spawnerObjectsDatabase;
 }

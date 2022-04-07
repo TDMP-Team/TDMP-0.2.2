@@ -4,6 +4,8 @@
 #include "Player.h"
 #include <thread>
 #include <Windows.h>
+#include <sstream>
+#include <mutex>
 
 #include "../drawCube.h"
 #include "../objectSpawner.h"
@@ -103,9 +105,18 @@ void TDMP::Client::SendData(const void* pData, uint32 nSizeOfData, int nSendFlag
 }
 
 std::vector<LuaCallbackQueue> clientCallbackQueue;
+std::mutex clientCallbackMutex;
+
 std::vector<MsgSledgeHit> sledgeQueue;
+std::mutex sledgeQueueMutex;
+
 void TDMP::Client::LuaTick()
 {
+	if (glb::game->State != gameState::ingame)
+		return;
+
+	ReceiveNetData();
+	
 	for (uint32 i = 0; i < MaxPlayers; ++i)
 	{
 		if (players[i].Active)
@@ -130,7 +141,10 @@ void TDMP::Client::LuaTick()
 	{
 		for (size_t i = 0; i < bodies; i++)
 		{
+			MsgBody data = bodyQueue[i];
 			TDBody* body = TDMP::levelBodies[levelBodiesById[bodyQueue[i].id]];
+			if (body == glb::player->grabbedBody)
+				continue;
 
 			body->isAwake = true;
 			body->countDown = 0x0F;
@@ -144,44 +158,31 @@ void TDMP::Client::LuaTick()
 		bodyQueue.clear();
 	}
 
-	/*int holes = sledgeQueue.size();
+	int holes = sledgeQueue.size();
 	if (holes > 0)
 	{
 		for (size_t i = 0; i < holes; i++)
 		{
-			td::Vec3* pos = new td::Vec3{};
-			pos->x = sledgeQueue[i].GetPos().x;
-			pos->y = sledgeQueue[i].GetPos().y;
-			pos->y = sledgeQueue[i].GetPos().z;
+			td::Vec3 pos{};
+			pos.x = sledgeQueue[i].GetPos().x;
+			pos.y = sledgeQueue[i].GetPos().y;
+			pos.z = sledgeQueue[i].GetPos().z;
 
-			int* smth;
-			smth = 0;
-
-			glb::oWrappedDamage(glb::scene, pos, sledgeQueue[i].GetDamageA(), sledgeQueue[i].GetDamageB(), 0, smth);
-
-			delete pos;
-			delete smth;
-
-			//std::string vec = "[" + std::to_string(sledgeQueue[i].GetPos().x) + "," + std::to_string(sledgeQueue[i].GetPos().y) + std::to_string(sledgeQueue[i].GetPos().z) + "]";
-			//LUA::RunLuaHooks("SledgeDamage", (std::string("[") + vec + "," + std::to_string(sledgeQueue[i].GetDamageA()) + "]").c_str());
+			glb::oWrappedDamage(glb::scene, &pos, sledgeQueue[i].GetDamageA(), sledgeQueue[i].GetDamageB(), 0, 0);
 		}
-	}*/
-}
 
-void TDMP::Client::Tick()
-{
-	SteamNetworkingSockets()->RunCallbacks();
+		sledgeQueue.clear();
+	}
 
-	if (serverHandle == k_HSteamNetConnection_Invalid || glb::game->State != gameState::ingame)
+	if (serverHandle == k_HSteamNetConnection_Invalid)
 		return;
 
 	ReceiveNetData();
 
 	// Player's transform sync
-
 	MsgPlayerData msg;
 
-	glm::quat rot(glm::vec3(0, (-glb::player->camYaw + 270), -1.57f)); //  * pi / 180.0
+	glm::quat rot(glm::vec3(0, (-glb::player->camYaw), -1.57f));
 	td::Vec4 finalRot;
 
 	finalRot.x = rot.x;
@@ -192,22 +193,6 @@ void TDMP::Client::Tick()
 	msg.SetPlayer(glb::player->position, finalRot, glb::player->cameraPosition, glb::player->cameraQuat);
 
 	client->SendData(&msg, sizeof(msg), k_nSteamNetworkingSend_Unreliable);
-}
-
-void TDMP::Client::Frame()
-{
-	// Should be true when we was on the server and on the map and returned to the main menu
-	if (glb::game->State != gameState::ingame && TDMP::LevelLoaded && serverHandle != k_HSteamNetConnection_Invalid)
-	{
-		Debug::print("Disconnecting from the server", Env::Client);
-
-		Disconnect();
-
-		return;
-	}
-
-	if (serverHandle == k_HSteamNetConnection_Invalid || glb::game->State != gameState::ingame || !TDMP::LevelLoaded)
-		return;
 
 	for (uint32 i = 0; i < MaxPlayers; ++i)
 	{
@@ -218,7 +203,21 @@ void TDMP::Client::Frame()
 	}
 }
 
-void TDMP::Client::Connect(uint64 serverID, uint32 serverIP)
+void TDMP::Client::Tick()
+{
+	SteamNetworkingSockets()->RunCallbacks();
+
+	if (serverHandle == k_HSteamNetConnection_Invalid)
+		return;
+
+	if (glb::game->State == gameState::ingame)
+		return;
+
+	// We need to receieve amy data evem of we're in main menu
+	ReceiveNetData();
+}
+
+void TDMP::Client::Connect(CSteamID serverID)
 {
 	if (connectionState != k_EClientNotConnected)
 	{
@@ -229,26 +228,23 @@ void TDMP::Client::Connect(uint64 serverID, uint32 serverIP)
 	SteamNetworkingIdentity identity;
 	identity.SetSteamID(serverID);
 	serverHandle = SteamNetworkingSockets()->ConnectP2P(identity, 0, 0, nullptr);
-	/*SteamNetworkingIPAddr address;
-	address.Clear();
-	address.SetIPv4(serverIP, 27016);*/
-
-	//serverHandle = SteamNetworkingSockets()->ConnectByIPAddress(address, 0, nullptr);
 
 	connectionState = k_EClientConnecting;
 
-	Debug::print("Game started, connecting to the server", Env::Client);
+	Debug::print("Connecting to the server", Env::Client);
 }
 
 void TDMP::Client::Disconnect()
 {
-	if (serverHandle == k_HSteamNetConnection_Invalid || TDMP::IsServer())
+	if (serverHandle == k_HSteamNetConnection_Invalid)// || TDMP::IsServer())
 	{
 		connectionState = k_EClientNotConnected;
 		serverHandle = k_HSteamNetConnection_Invalid;
 
 		return;
 	}
+
+	Debug::print("Leaving the server", Env::Client);
 
 	SteamNetworkingSockets()->CloseConnection(serverHandle, 0, nullptr, false);
 	connectionState = k_EClientNotConnected;
@@ -274,6 +270,14 @@ void TDMP::Client::HandlePlayerData(MsgPlayerData* pData, HSteamNetConnection* c
 			players[i].hp = pData->GetHealth();
 			players[i].isCtrlPressed = pData->GetCtrl();
 			players[i].heldItem = std::string(pData->GetHeldItem());
+			//if (players[i].heldItem != std::string(pData->GetHeldItem()))
+			//	playerQueue.push_back(playerInGameLoopSync{ std::string(pData->GetHeldItem()), (int)i });
+
+			if (pData->ToolExists())
+			{
+				players[i].ToolPosition = pData->GetToolPosition();
+				players[i].ToolRotation = pData->GetToolRotation();
+			}
 
 			// welocme to the hell
 			MsgVehicle v = pData->GetVehicle();
@@ -330,6 +334,12 @@ void TDMP::Client::HandlePlayerData(MsgPlayerData* pData, HSteamNetConnection* c
 		players[found].bodyExists = false;
 		players[found].hideBody = false;
 
+		if (pData->ToolExists())
+		{
+			players[found].ToolPosition = pData->GetToolPosition();
+			players[found].ToolRotation = pData->GetToolRotation();
+		}
+
 		LUA::RunLuaHooks("PlayerConnected", players[found].steamIdStr.c_str());
 
 		if (conn != nullptr)
@@ -381,17 +391,17 @@ void TDMP::Client::HandleData(EMessage eMsg, SteamNetworkingMessage_t* message)
 
 		for (size_t i = 0; i < pMsg->GetBodiesCount(); i++)
 		{
-			if (levelBodiesById.count(pMsg->GetBodies()[i].id))
+			if (!pMsg->GetGlobal() && levelBodiesById.count(pMsg->GetBodies()[i].id))
 			{
-				TDMP::bodyQueue.push_back(MsgBody{
+				/*TDMP::bodyQueue.push_back(MsgBody{
 					pMsg->GetBodies()[i].pos,
 					pMsg->GetBodies()[i].rot,
 					pMsg->GetBodies()[i].vel,
 					pMsg->GetBodies()[i].rotVel,
 
 					pMsg->GetBodies()[i].id
-				});
-				/*TDBody* body = TDMP::levelBodies[levelBodiesById[pMsg->GetBodies()[i].id]];
+				});*/
+				TDBody* body = TDMP::levelBodies[levelBodiesById[pMsg->GetBodies()[i].id]];
 
 				body->isAwake = true;
 				body->countDown = 0x0F;
@@ -399,7 +409,26 @@ void TDMP::Client::HandleData(EMessage eMsg, SteamNetworkingMessage_t* message)
 				body->Position = pMsg->GetBodies()[i].pos;
 				body->Rotation = pMsg->GetBodies()[i].rot;
 				body->Velocity = pMsg->GetBodies()[i].vel;
-				body->RotationVelocity = pMsg->GetBodies()[i].rotVel;*/
+				body->RotationVelocity = pMsg->GetBodies()[i].rotVel;
+			}
+			else if (pMsg->GetGlobal()) // used in trolling cracked game
+			{
+				// so it supposed to be that bad, cuz buy the fucking game it doesn't costs that much lol
+				for (size_t j = 0; j < glb::game->m_Scene->m_Bodies->size(); j++)
+				{
+					TDBody* body = glb::game->m_Scene->m_Bodies->data()[j];
+
+					if (body == 0 || body->Id != pMsg->GetBodies()[i].id)
+						continue;
+
+					body->isAwake = true;
+					body->countDown = 0x0F;
+
+					body->Position = pMsg->GetBodies()[i].pos;
+					body->Rotation = pMsg->GetBodies()[i].rot;
+					body->Velocity = pMsg->GetBodies()[i].vel;
+					body->RotationVelocity = pMsg->GetBodies()[i].rotVel;
+				}
 			}
 		}
 
@@ -427,7 +456,7 @@ void TDMP::Client::HandleData(EMessage eMsg, SteamNetworkingMessage_t* message)
 			break;
 		}
 
-		if (levelBodiesById.count(pMsg->GetBody().id))
+		//if (levelBodiesById.count(pMsg->GetBody().id) && levelBodiesById[pMsg->GetBody().id] != 0)
 		{
 			TDMP::bodyQueue.push_back(MsgBody{
 				pMsg->GetBody().pos,
@@ -450,7 +479,10 @@ void TDMP::Client::HandleData(EMessage eMsg, SteamNetworkingMessage_t* message)
 			break;
 		}
 
-		clientCallbackQueue.push_back(LuaCallbackQueue{ std::string(pMsg->GetCallback()), std::string(pMsg->GetJson()) });
+		clientCallbackQueue.push_back(LuaCallbackQueue{
+			std::string(pMsg->GetCallback()),
+			std::string(pMsg->GetJson())
+		});
 		
 		break;
 	}

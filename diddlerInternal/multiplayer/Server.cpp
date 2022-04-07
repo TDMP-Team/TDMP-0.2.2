@@ -24,23 +24,12 @@
 
 #include "../Lua.h"
 
+#include <mutex>
 #include <cmath>
 
 TDMP::Server* TDMP::server;
 
 // Thanks to Valve for making source code of Spacewar public
-
-// DebugOutput for debugging steam's servers stuff
-/*static void DebugOutput(ESteamNetworkingSocketsDebugOutputType eType, const char* pszMsg)
-{
-	if (eType == k_ESteamNetworkingSocketsDebugOutputType_Bug)
-	{
-		TDMP::Debug::error(pszMsg);
-		return;
-	}
-
-	TDMP::Debug::print(pszMsg, TDMP::Env::Server);
-}*/
 
 uint16 port = 27016;
 TDMP::Server::Server()
@@ -64,17 +53,10 @@ TDMP::Server::Server()
 
 		SteamGameServer()->EnableHeartbeats(true);
 	}
-	//SteamNetworkingUtils()->SetDebugOutputFunction(k_ESteamNetworkingSocketsDebugOutputType_Msg, DebugOutput);
-
-	// Hosting server via IP (So, not P2P)
-	/*SteamNetworkingIPAddr address;
-	address.Clear();
-	address.m_port = port;*/
 
 	TDMP::server = this;
 
 	socket = SteamGameServerNetworkingSockets()->CreateListenSocketP2P(0, 0, nullptr);
-	//socket = SteamGameServerNetworkingSockets()->CreateListenSocketIP(address, 0, 0);
 	if (socket == k_HSteamListenSocket_Invalid)
 	{
 		Debug::error("Failed to listen on port " + std::to_string(port));
@@ -136,7 +118,7 @@ void TDMP::Server::LuaTick()
 	{
 		for (size_t i = 0; i < callbacks; i++)
 		{
-			LUA::CallEvent(callbackQueue[i].callback.c_str(), callbackQueue[i].json.c_str());
+			LUA::CallEvent(callbackQueue[i].callback.c_str(), callbackQueue[i].json.c_str(), callbackQueue[i].steamId);
 		}
 
 		callbackQueue.clear();
@@ -152,6 +134,8 @@ void TDMP::Server::LuaUpdate()
 	int packs = 0;
 
 	MsgUpdateBodies msg;
+
+	msg.SetGlobal(false);
 	for (size_t i = 0; i < TDMP::levelBodies.size(); i++)
 	{
 		TDBody* body = TDMP::levelBodies[i];
@@ -159,53 +143,40 @@ void TDMP::Server::LuaUpdate()
 		if (body == 0)
 			continue;
 
+		// This is needed for sending currently grabbed body only once without any brainfuck or addditional "ifs"
+		if (glb::player->grabbedBody == body)
+		{
+			MsgUpdateBody oneBody;
+
+			oneBody.SetBody(body);
+			server->BroadcastData(&oneBody, sizeof(oneBody), k_nSteamNetworkingSend_Unreliable);
+
+			continue;
+		}
+
 		float len = pow(body->Velocity.x, 2) + pow(body->Velocity.y, 2) + pow(body->Velocity.z, 2);
 
-		if (len == 0 || len <= 0.008f)
-			continue;
-
-		// Game crashes when trying to access `VoxelCount` of a vehicle
-		if (body->Type == entityType::Body)
+		if (body->Type == entityType::Vehicle)
 		{
-			TDShape* shape = (TDShape*)body->pChild;
-			int voxelCount = 0;
+			TDVehicle* veh = (TDVehicle*)body;
 
-			// Expensive, I guess?
-			while (shape != 0) {
-				if (shape->Type == entityType::Shape && shape->pVox != 0) // TOOD: Crashes sometimes saying that shape address was changed or smth like that
-					voxelCount += shape->pVox->VoxelCount;
-
-				shape = (TDShape*)shape->pSibling;
-			}
-
-			if (voxelCount <= 10)
+			if ((len == 0 || len <= .005f) && !veh->m_RemoteDrive)
 				continue;
 		}
+		else if (len == 0 || len <= 0.005f)
+			continue;
 
 		msg.PushBody(bodiesId, MsgBody{ body->Position, body->Rotation, body->Velocity, body->RotationVelocity, body->Id });
 		bodiesId++;
 
 		// if next body would reach limit of packet
-		if (bodiesId + 1 >= 24)
+		if (bodiesId + 1 >= 40)
 		{
 			server->BroadcastData(&msg, sizeof(msg), k_nSteamNetworkingSend_Unreliable); // then send it
 
 			packs++;
 			bodiesId = 0;
 		}
-
-		/*if (bodies.size() >= 100)
-		{
-			MsgUpdateBodies msg;
-
-			msg.Serialize(bodies);
-			//msg.PushBodies(bodies);
-			msgs.push_back(msg);
-
-			bodies.clear();
-		}
-
-		bodies.push_back(MsgBody{ body->Position, body->Rotation, body->Velocity, body->RotationVelocity, body->Id });*/
 	}
 
 	// Sending last body array
@@ -215,31 +186,7 @@ void TDMP::Server::LuaUpdate()
 
 		server->BroadcastData(&msg, sizeof(msg), k_nSteamNetworkingSend_Unreliable);
 	}
-
-	//Debug::print("Sent in total " + std::to_string(packs) + " packs of bodies", Env::Server);
-
-	/*
-	// if bodies vector isn't empty (so it wasn't pushed to the packets to be sent), then we need to push it here
-	// TODO: Make it so if we need to send only one body at all, then send k_EMsgServerUpdateBody instead. Shall be faster
-	if (bodies.size() > 0)
-	{
-		MsgUpdateBodies msg;
-
-		msg.Serialize(bodies);
-		//msg.PushBodies(bodies);
-		msgs.push_back(msg);
-	}
-
-	if (msgs.size() > 0)
-	{
-		for (size_t i = 0; i < msgs.size(); i++)
-		{
-			server->BroadcastData(&msgs[i], sizeof(msgs[i]), k_nSteamNetworkingSend_Unreliable);
-		}
-	}*/
 }
-
-void TDMP::Server::Frame() { }
 
 void TDMP::Server::ReceiveNetData()
 {
@@ -285,7 +232,10 @@ void TDMP::Server::ReceiveNetData()
 				break;
 			}
 
-			server->BroadcastData(pMsg, sizeof(pMsg), k_nSteamNetworkingSend_Unreliable, true);
+			MsgSledgeHit msg;
+			msg.SetData(pMsg->GetPos(), pMsg->GetDamageA(), pMsg->GetDamageB());
+
+			server->BroadcastData(&msg, sizeof(msg), k_nSteamNetworkingSend_Unreliable, true);
 
 			break;
 		}
@@ -298,24 +248,28 @@ void TDMP::Server::ReceiveNetData()
 				break;
 			}
 
-			// I'm not sure if it's the best way of doing it
-			for (uint32 i = 0; i < MaxPlayers; ++i)
+			// Here we're setting steamid of client which sent to us information about him. We can also make it here sending position from server's side (Like if we were simulating player movement on serverside),
+			// but this mod would be used by friends so we don't really need to use anti-exploit/cheat things here?
+
+			// looks terrible i know
+			MsgPlayerData msg;
+			msg.SetPlayer(steamID, pMsg->GetPosition(), pMsg->GetRotation(), pMsg->GetCamPosition(), pMsg->GetCamRotation(),
+				pMsg->GetVehicle(), pMsg->GetHealth(), pMsg->GetCtrl(), pMsg->GetHeldItem(), pMsg->ToolExists(), pMsg->GetToolPosition(), pMsg->GetToolRotation());
+
+			if (pMsg->GetGrabbed().id != 0 && TDMP::levelBodiesById.count(pMsg->GetGrabbed().id))
 			{
-				ClientConnectionData_t client = ClientData[i];
-				if (client.Active && client.handle == connection)
-				{
-					// Here we're setting steamid of client which sent to us information about him. We can also make it here sending position from server's side (Like if we were simulating player movement on serverside),
-					// but this mod would be used by friends so we don't really need to use anti-exploit/cheat things here?
+				TDMP::bodyQueue.push_back(MsgBody{
+					pMsg->GetGrabbed().pos,
+					pMsg->GetGrabbed().rot,
+					pMsg->GetGrabbed().vel,
+					pMsg->GetGrabbed().rotVel,
 
-					MsgPlayerData msg;
-					msg.SetPlayer(client.SteamIDUser, pMsg->GetPosition(), pMsg->GetRotation(), pMsg->GetCamPosition(), pMsg->GetCamRotation(), pMsg->GetVehicle(), pMsg->GetHealth(), pMsg->GetCtrl(), pMsg->GetHeldItem());
-
-					server->BroadcastData(&msg, sizeof(msg), k_nSteamNetworkingSend_Unreliable);
-					TDMP::client->HandlePlayerData(&msg, &connection);
-
-					break;
-				}
+					pMsg->GetGrabbed().id
+					});
 			}
+
+			server->BroadcastData(&msg, sizeof(msg), k_nSteamNetworkingSend_Unreliable);
+			TDMP::client->HandlePlayerData(&msg, &connection);
 
 			break;
 		}
@@ -329,7 +283,7 @@ void TDMP::Server::ReceiveNetData()
 			}
 
 			// pcall must be called from game loop
-			callbackQueue.push_back(LuaCallbackQueue{ std::string(pMsg->GetCallback()), std::string(pMsg->GetJson()) });
+			callbackQueue.push_back(LuaCallbackQueue{ std::string(pMsg->GetCallback()), std::string(pMsg->GetJson()), std::to_string(steamID.ConvertToUint64()), pMsg->GetJsonLength() });
 
 			break;
 		}
@@ -342,7 +296,7 @@ void TDMP::Server::ReceiveNetData()
 			}
 			MsgClientBeginAuthentication* pMsg = (MsgClientBeginAuthentication*)message->GetData();
 
-			OnClientBeginAuthentication(pMsg->GetSteamID(), connection, (void*)pMsg->GetTokenPtr(), pMsg->GetTokenLen());
+			OnClientBeginAuthentication(steamID, connection, (void*)pMsg->GetTokenPtr(), pMsg->GetTokenLen());
 		}
 		break;
 		default:
@@ -409,10 +363,17 @@ void TDMP::Server::OnConnectionStatusChanged(SteamNetConnectionStatusChangedCall
 
 			if (ClientData[i].SteamIDUser == info.m_identityRemote.GetSteamID())
 			{
+				ClientData[i].Active = false;
+
 				// Flush all others messages of connection
 				SteamGameServerNetworkingSockets()->FlushMessagesOnConnection(ClientData[i].handle);
 
+				// and then clean it
+				memset(&PendingClientData[i], 0, sizeof(ClientConnectionData_t));
+				PendingClientData[i].Active = false;
+
 				Debug::print("Player " + std::to_string(ClientData[i].SteamIDUser.ConvertToUint64()) + " disconnected", Env::Server);
+				SteamGameServer()->EndAuthSession(info.m_identityRemote.GetSteamID());
 
 				MsgClientExiting msg;
 				msg.SetPlayer(ClientData[i].SteamIDUser);
@@ -422,6 +383,8 @@ void TDMP::Server::OnConnectionStatusChanged(SteamNetConnectionStatusChangedCall
 
 				SteamGameServerNetworkingSockets()->CloseConnection(ClientData[i].handle, k_ESteamNetConnectionEnd_App_Min + 1, nullptr, false);
 				memset(&ClientData[i], 0, sizeof(ClientConnectionData_t));
+
+				break;
 			}
 		}
 	}
@@ -538,37 +501,40 @@ void TDMP::Server::BroadcastData(const void* pData, uint32 nSizeOfData, int nSen
 
 void TDMP::Server::Shutdown()
 {
-	for (uint32 i = 0; i < MaxPlayers; ++i)
+	if (ConnectedToSteam)
 	{
-		if (ClientData[i].Active)
+		for (uint32 i = 0; i < MaxPlayers; ++i)
 		{
-			// Flush all others messages of connection
-			SteamGameServerNetworkingSockets()->FlushMessagesOnConnection(ClientData[i].handle);
-			MsgServerExiting msg;
-			// And send new one
-			SteamGameServerNetworkingSockets()->SendMessageToConnection(ClientData[i].handle, &msg, sizeof(msg), k_nSteamNetworkingSend_Reliable, nullptr);
+			if (ClientData[i].Active)
+			{
+				// Flush all others messages of connection
+				SteamGameServerNetworkingSockets()->FlushMessagesOnConnection(ClientData[i].handle);
+				MsgServerExiting msg;
+				// And send new one
+				SteamGameServerNetworkingSockets()->SendMessageToConnection(ClientData[i].handle, &msg, sizeof(msg), k_nSteamNetworkingSend_Reliable, nullptr);
 
-			ClientData[i].Active = false;
+				ClientData[i].Active = false;
+			}
+
+			if (players[i].body.body != 0x00)
+			{
+				players[i].Active = false;
+			}
 		}
 
-		if (players[i].body.body != 0x00)
-		{
-			players[i].Active = false;
-		}
+		SteamGameServer()->EnableHeartbeats(false);
+
+		SteamGameServerNetworkingSockets()->CloseListenSocket(socket);
+		SteamGameServerNetworkingSockets()->DestroyPollGroup(pollGroup);
+		SteamGameServer()->LogOff();
+
+		SteamGameServer_Shutdown();
 	}
 
-	SteamGameServer()->EnableHeartbeats(false);
-
-	SteamGameServerNetworkingSockets()->CloseListenSocket(socket);
-	SteamGameServerNetworkingSockets()->DestroyPollGroup(pollGroup);
-	SteamGameServer()->LogOff();
-	
-	SteamGameServer_Shutdown();
-
 	SteamMatchmaking()->SetLobbyJoinable(TDMP::lobby->id, true);
+	
+	Debug::print("Server is closed. Lobby is joinable now", Env::Server);
 
 	delete TDMP::server;
 	TDMP::server = nullptr;
-	
-	Debug::print("Server is closed. Lobby is joinable now", Env::Server);
 }

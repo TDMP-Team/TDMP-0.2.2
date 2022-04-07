@@ -26,10 +26,18 @@ namespace LUA
 		int ref;
 	};
 
+	struct tool
+	{
+		std::string voxPath;
+		float scale;
+	};
+
+	extern std::map<int, TDBody*> spawnedBodies;
 	extern std::vector<Callback> callbacks;
 	extern std::map<std::string, std::map<const char*, LUA::Hook>> hooks;
 
 	void RunLuaHooks(const char* hookName, const char* jsonData);
 	void CallCallbacks(const char* callbackName);
-	void CallEvent(const char* eventName, const char* jsonData);
+	void CallEvent(const char* eventName, const char* jsonData, std::string steamId = "");
+	tool* GetTool(std::string toolName);
 }

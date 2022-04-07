@@ -19,6 +19,7 @@
 #include "crashHandler.h"
 #include "Script.h"
 #include "Lua.hpp"
+#include "td_memory.h"
 
 struct RaycastFilter
 {
@@ -31,6 +32,10 @@ struct RaycastFilter
     TDBody* m_IgnoredBodiesMemory[4]; // small_vector should support pre-reserved buffers... not going to add that right now.
     td::small_vector<TDShape*> m_IgnoredShapes;
 };
+
+namespace td {
+    class small_string;
+}
 
 //world
 typedef void(__fastcall* environmentUpdate)(uintptr_t env);
@@ -71,6 +76,8 @@ typedef __int64(__fastcall* constructScreen)(TDScreen* a1, uintptr_t a2);
 typedef __int64(__fastcall* unknGraphicsInitFunction)(void* a1);
 typedef void*(__fastcall* initScreenSecondary)(void* a1, void* a2, void* a3);
 
+typedef void*(__fastcall* tGetString)(void* registry, td::small_string* out, td::small_string* keyName);
+
 //lua
 typedef void* (__fastcall* TluaAlloc)(void* userData, void* ptr, size_t oldSize, size_t newSize);
 typedef void (*tRegisterGameFunctions)		(CScriptCore* pScriptCore);
@@ -87,7 +94,12 @@ typedef int(__fastcall* tlua_createtable)				(lua_State* L, int narray, int nrec
 typedef int(__fastcall* tluaV_gettable)				(lua_State* L, const TValue* t, TValue* key, StkId val);
 typedef int(__fastcall* tluaV_settable)				(lua_State* L, const TValue* t, TValue* key, StkId val);
 typedef int(__fastcall* tluaS_newlstr)				(lua_State* L, const char* str, size_t l);
-typedef TValue*(__fastcall* tlua_index2adr)				(lua_State* L, int idx);
+typedef TValue* (__fastcall* tlua_index2adr)				(lua_State* L, int idx);
+
+typedef bool(__fastcall* tHasTag)				(Entity* ent, td::small_string tag);
+typedef void(__fastcall* tMakeHole)				(void* a1, void* a2, td::Vec3* pos, float softDmg, float mediumDmg, float hardDmg, bool noSound, void* a3);
+
+typedef td::small_string* (__fastcall* convertPath)(CScriptCore* special, td::small_string* output, td::small_string* path);
 
 //a1: GAME + 0xA8
 //a2: small_string* containing path
@@ -105,7 +117,6 @@ typedef void(__fastcall* attachJoint)(TDJoint* joint, TDShape* shape1, TDShape* 
 typedef void(__fastcall* updateJoint)(TDJoint* joint);
 
 //misc
-typedef void(__fastcall* funRuiner)(DWORD a1, DWORD a2, DWORD a3);
 typedef void(__stdcall* damageObject)(uintptr_t a1, uintptr_t a2, td::Vec3* a3, float a4, float a5, uintptr_t a6, uintptr_t a7, uintptr_t a8);
 typedef void(__stdcall* createExplosionWrapped)(double unkn, td::Vec3* pos, float power);
 typedef void(__fastcall* spawnParticleWrapped)(double a1, __int64 a2);
@@ -115,11 +126,8 @@ typedef BOOL(__stdcall* twglSwapBuffers)(_In_ HDC hDc);
 typedef void (*tPaint) (uintptr_t* Scene, td::Vec3* Position, float size, int darken, float dispersion); 
 typedef void(__fastcall* cameraPositioning)(uintptr_t a1, float a2, uintptr_t a3, uintptr_t a4);
 typedef void(__fastcall* modApiLinker)(__int64 a1);
-typedef int(__fastcall* makeHole)(byte data1[32], byte data2[32], byte data3[32], byte data4[32]);
 typedef char(__fastcall* idfk) (__int64 a1, __int64 a2, signed int* a3, signed int* a4, signed int* a5);
 typedef void(__fastcall* damagePlayer) (TDPlayer* player, float damage);
-typedef uintptr_t(__fastcall* TMalloc)(size_t);
-typedef void(__fastcall* TFree)(uintptr_t mem);
 typedef void*(__cdecl* TRealloc)(void* mem, size_t _Size);
 typedef void(__fastcall* spreadFire)(__int64 a1, float v2);
 typedef void(__fastcall* addContextItem)(char* a1, int a2, int a3, float* a4);
@@ -127,9 +135,6 @@ typedef bool(__fastcall* isActiveWindow)(void* a1);
 typedef bool(__fastcall* createTextureThing)(void* texture, void* pixelBuffer, bool a3);
 typedef void(__fastcall* updateScreen)(TDScreen* screen);
 typedef void*(__fastcall* loadResource)(void* a1, void* a2, int a3);
-typedef void*(__fastcall* sub_140105F30)(TDScreen* screen, int a2);
-typedef void*(__fastcall* sub_140146470)(__int64 a1, __int64 a2);
-typedef void*(__fastcall* sub_140032EA0)(float* a1, __int64 a2, float* a3);
 
 //td maths
 typedef __int64(__fastcall* apiQuatEuler)(float* a1, float* a2);
@@ -140,9 +145,6 @@ typedef bool(__fastcall* doQuicksave)(TDScene* a1);
 typedef bool(__fastcall* doQuickload)(TDScene* a1);
 typedef void* (__fastcall* validateFileExistance)(__int64 a1, void* a2, td::small_string* path);
 typedef char(__fastcall* loadTDBIN)(__int64 a1, td::small_string* a2);
-typedef __int64(__fastcall* S140152540)(__int64 a1, __int64 a2, __int64 a3);
-typedef __int64(__fastcall* S1400C4F70)(__int64 a1, __int64 a2);
-typedef void*(__fastcall* S140152740)(void* a1);
 
 //SEE TDFUNCS.CPP FOR SIGSCANNING
 namespace glb {
@@ -151,9 +153,6 @@ namespace glb {
     extern bool isGameFocused;
 
     extern loadTDBIN oLtDBin;
-    extern S140152540 o_S140152540;
-    extern S1400C4F70 o_S1400C4F70;
-    extern S140152740 o_S140152740;
     extern validateFileExistance oValidate;
     extern doQuicksave oDoQuicksave;
     extern doQuickload oDoQuickload;
@@ -163,10 +162,6 @@ namespace glb {
     extern loadResource oLoadResource;
     extern raycastCrashA tdRaycastCrashA;
     extern raycastCrashB tdRaycastCrashB;
-
-    extern sub_140105F30 osub_140105F30;
-    extern sub_140146470 osub_140146470;
-    extern sub_140032EA0 osub_140032EA0;
 
     extern TDObjectList* TDOL;
     extern TDPlayer* player;
@@ -181,7 +176,6 @@ namespace glb {
     extern unknReadVoxData oIUnReadVox;
     extern isActiveWindow oIsActive;
 
-    extern funRuiner tdFunRuiner;
     extern joinConstructor tdConstructJoint;
     extern initBall tdInitBall;
     extern initHinge tdInitHinge;
@@ -193,6 +187,7 @@ namespace glb {
     extern constructScreen tdConstructScreen;
     extern updateScreen tdUpdateScreen;
     extern initScreenSecondary tdInitScreenSecondary;
+    extern float steamDrmIntegrity;
 
     extern interestingUpdateFunc tdUpdateFunc;
     extern highlightShape oHighlightShape;
@@ -207,7 +202,6 @@ namespace glb {
     extern cameraPositioning oCamPos;
     extern damageObject oDamageObject;
     extern modApiLinker oMAL;
-    extern makeHole oMakeHole;
     extern damagePlayer oDamagePlayer;
     extern idfk killme;
     extern tPaint oPaint;
@@ -218,13 +212,16 @@ namespace glb {
     extern B_Constructor oB_Constructor;
     extern S_Constructor oS_Constructor;
     extern SetDynamic oSetDynamic;
-    extern TMalloc oTMalloc;
-    extern TFree oTFree;
     extern TRealloc oTRealloc;
     extern frameDrawLine oFDL;
     extern rayCast oRC;
     extern spawnFire oSpawnFire;
     extern createProjectile oPewpew;
+
+    extern tGetString GetString;
+
+    extern tMakeHole oMakeHole;
+    extern convertPath oConvertPath;
 
     extern TluaAlloc LuaAllocF;
     extern tRegisterGameFunctions RegisterGameFunctions;
@@ -241,6 +238,8 @@ namespace glb {
     extern tluaV_settable oluaV_settable;
     extern tluaS_newlstr oluaS_newlstr;
     extern tlua_index2adr olua_index2adr;
+
+    extern tHasTag oHasTag;
     
     extern createExplosion TDcreateExplosion;
     extern spawnParticle TDspawnParticle;

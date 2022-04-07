@@ -17,17 +17,10 @@ namespace glb {
 	bool isGameFocused = false;
 
 	loadTDBIN oLtDBin;
-	S140152540 o_S140152540;
-	S1400C4F70 o_S1400C4F70;
-	S140152740 o_S140152740;
 	validateFileExistance oValidate;
 	doQuicksave oDoQuicksave;
 	doQuickload oDoQuickload;
 	loadResource oLoadResource;
-
-	sub_140105F30 osub_140105F30;
-	sub_140146470 osub_140146470;
-	sub_140032EA0 osub_140032EA0;
 
 	TDObjectList* TDOL;
 	TDPlayer* player;
@@ -53,6 +46,7 @@ namespace glb {
 	raycastCrashA tdRaycastCrashA;
 	raycastCrashB tdRaycastCrashB;
 
+	float steamDrmIntegrity;
 	joinConstructor tdConstructJoint;
 	initBall tdInitBall;
 	initHinge tdInitHinge;
@@ -61,7 +55,6 @@ namespace glb {
 	attachJoint tdAttachJoint;
 	updateJoint tdUpdateJoint;
 
-	funRuiner tdFunRuiner;
 	interestingUpdateFunc tdUpdateFunc;
 	highlightShape oHighlightShape;
 	outlineShape oOutlineShape;
@@ -75,7 +68,6 @@ namespace glb {
 	cameraPositioning oCamPos;
 	damageObject oDamageObject;
 	modApiLinker oMAL;
-	makeHole oMakeHole;
 	damagePlayer oDamagePlayer;
 	idfk killme;
 	tPaint oPaint;
@@ -94,6 +86,11 @@ namespace glb {
 	spawnFire oSpawnFire;
 	createProjectile oPewpew;
 
+	tGetString GetString;
+
+	tMakeHole oMakeHole;
+	convertPath oConvertPath;
+
 	TluaAlloc LuaAllocF;
 	tRegisterGameFunctions RegisterGameFunctions;
 	tRegisterLuaFunction tdRegisterLuaFunction;
@@ -109,6 +106,8 @@ namespace glb {
 	tluaV_settable oluaV_settable;
 	tluaS_newlstr oluaS_newlstr;
 	tlua_index2adr olua_index2adr;
+
+	tHasTag oHasTag;
 
 	createExplosion TDcreateExplosion;
 	spawnParticle TDspawnParticle;

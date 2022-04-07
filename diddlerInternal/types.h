@@ -5,6 +5,7 @@
 #include <cstdlib>
 #include <cstring>
 #include "memhandler.h"
+#include "td_memory.h"
 
 
 namespace td {
@@ -180,54 +181,7 @@ namespace td {
 	 *
 	 * You are welcome to submit pull requests for these if you wish.
 	 */
-	class small_string
-	{
-	public:
-		small_string() {};
-		small_string(const char* str) {
-			size_t len = strlen(str);
-			char* dst = m_StackBuffer[15] ? m_HeapBuffer : &m_StackBuffer[0];
-
-			if (len > 15)
-			{
-				dst = (char*)malloc(len + 1);
-
-				if (dst == nullptr)
-				{
-					return;
-				}
-
-				if (m_StackBuffer[15])
-				{
-					free(m_HeapBuffer);
-				}
-				else
-				{
-					m_StackBuffer[15] = 1;
-				}
-
-				m_HeapBuffer = dst;
-			}
-
-			memcpy(dst, str, len);
-			dst[len] = 0;
-		}
-		~small_string() {
-			if (m_StackBuffer[15])
-			{
-				free(m_HeapBuffer);
-			}
-		}
-
-		const char* c_str() const { return m_StackBuffer[15] ? m_HeapBuffer : &m_StackBuffer[0]; }
-
-	private:
-		union {
-			char* m_HeapBuffer;
-			char m_StackBuffer[16] = { 0 };
-		};
-	};
-
+	
 	/*
 	 * Helper class for interacting with Teardown vectors.
 	 *

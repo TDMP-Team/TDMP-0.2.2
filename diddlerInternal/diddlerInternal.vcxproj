@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|Win32">
@@ -199,7 +199,6 @@
     <ClInclude Include="multiplayer\Messages.h" />
     <ClInclude Include="multiplayer\Player.h" />
     <ClInclude Include="multiplayer\Server.h" />
-    <ClInclude Include="console.h" />
     <ClInclude Include="constClock.h" />
     <ClInclude Include="detours.h" />
     <ClInclude Include="detver.h" />
@@ -231,6 +230,7 @@
     <ClInclude Include="mem.h" />
     <ClInclude Include="swapBuffers.h" />
     <ClInclude Include="TDObjects.h" />
+    <ClInclude Include="td_memory.h" />
     <ClInclude Include="types.h" />
   </ItemGroup>
   <ItemGroup>
@@ -266,7 +266,6 @@
     <ClCompile Include="..\lua-5.1.4\lvm.c" />
     <ClCompile Include="..\lua-5.1.4\lzio.c" />
     <ClCompile Include="..\lua-5.1.4\print.c" />
-    <ClCompile Include="console.cpp" />
     <ClCompile Include="constClock.cpp" />
     <ClCompile Include="crashHandler.cpp" />
     <ClCompile Include="dllmain.cpp" />
