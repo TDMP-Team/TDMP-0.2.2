@@ -14,3 +14,6 @@ Special thanks to:<br>
 Reverse engineers: <a href="https://github.com/nymda">Knebb</a>, <a href="https://github.com/kmcgurty">Kmcgurty1</a>, Nahu, <a href="https://github.com/gnalvesteffer">Xorberax</a>, <a href="https://github.com/SK83RJOSH">SK83RJOSH</a><br>
 Networking: <a href="https://github.com/DangerKiddy">DangerKiddy</a><br>
 Project Management: <a href="https://github.com/nebur7420">Nebur7420</a>
+
+# Building
+Use `Release` only to build TDMP
