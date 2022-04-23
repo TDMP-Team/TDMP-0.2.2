@@ -1,6 +1,6 @@
 # TDMP
 
-The main purpose of TDMP is to allowe players to play Teardown together.<br>
+The main purpose of TDMP is to allow players to play Teardown together.<br>
 The project currently works for Teardown version 0.9.2<br>
 <br>
 Instalation instructions and downloads to the project build can be found on the official TDMP discord.<br>
