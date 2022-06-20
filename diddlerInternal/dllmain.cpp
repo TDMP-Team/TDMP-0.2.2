@@ -92,81 +92,78 @@ bool getTeardownHwnd() {
 
 DWORD WINAPI main(HMODULE hModule)
 {
-    glb::hMdl = hModule;
-    FILE* cnsl = makeConsole();
-    std::cout << " __  __ _______ _______ _____  _______ _______ _____  " << std::endl;
-    std::cout << "|  |/  |    |  |    ___|     \\|   |   |       |     \\ " << std::endl;
-    std::cout << "|     <|       |    ___|  --  |       |   -   |  --  |" << std::endl;
-    std::cout << "|__|\\__|__|____|_______|_____/|__|_|__|_______|_____/ " << std::endl;
-    std::cout << "For teardown MAIN BRANCH version 0.9.2" << std::endl;
-    std::cout << "KnedMod is C to Knedit and is released under the GNU public license" << std::endl;
-    std::cout << "" << std::endl;
-    std::cout << "" << std::endl;
+    __try {
+        glb::hMdl = hModule;
+        FILE* cnsl = makeConsole();
+        
+        // ASCII Ogre
+        std::cout << " _____  ___          ___      _                   _                     _    ___   ____    _ " << std::endl;
+        std::cout << "/__   \\/   \\/\\/\\    / _ \\    | | ___ __   ___  __| |_ __ ___   ___   __| |  / _ \\ |___ \\  / |" << std::endl;
+        std::cout << "  / /\\/ /\\ /    \\  / /_)/____| |/ / '_ \\ / _ \\/ _` | '_ ` _ \\ / _ \\ / _` | | | | |  __) | | |" << std::endl;
+        std::cout << " / / / /_// /\\/\\ \\/ ___/_____|   <| | | |  __/ (_| | | | | | | (_) | (_| | | |_| | / __/ _| |" << std::endl;
+        std::cout << " \\/ /___,'\\/    \\/\\/         |_|\\_\_| |_|\\___|\\__,_|_| |_| |_|\\___/ \\__,_|  \\___(_)_____(_)_|" << std::endl;
+        std::cout << "For teardown MAIN BRANCH version 0.9.2" << std::endl;
+        std::cout << "" << std::endl;
+        std::cout << "" << std::endl;
 
-    //glb::gWnd = FindWindow(0, L"Teardown");
-    //
-    //wchar_t buffer[MAX_PATH] = { 0 };
-    //DWORD procID;
-    //GetWindowThreadProcessId(glb::gWnd, &procID);
-    //HINSTANCE Pr = (HINSTANCE)OpenProcess(PROCESS_QUERY_INFORMATION | PROCESS_VM_READ, NULL, procID);
-    //int FNlen = GetModuleFileNameEx(Pr, 0, buffer, MAX_PATH);
-    //CloseHandle(Pr);
-    //std::wcout << "M NAME: " << buffer << std::endl;
+        HANDLE mainHandle = GetModuleHandle(NULL);
+        getTeardownHwnd();
 
-    HANDLE mainHandle = GetModuleHandle(NULL);
-    getTeardownHwnd();
+        std::cout << "[I] HWND           : " << glb::gWnd << std::endl;
+        std::cout << "[I] baseModuleHandle: " << mainHandle << std::endl;
+        glb::moduleBase = (uintptr_t)mainHandle;
 
-    std::cout << "[I] HWND           : " << glb::gWnd << std::endl;
-    std::cout << "[I] baseModuleHandle: " << mainHandle << std::endl;
-    glb::moduleBase = (uintptr_t)mainHandle;
+        initSwapBuffersHook();
 
-    initSwapBuffersHook();
+        std::cout << "[I] Hooked swapBuffers" << std::endl;
 
-    std::cout << "[I] Hooked swapBuffers" << std::endl;
+        initHIDsHook();
 
-    initHIDsHook();
+        std::cout << "[I] Hooked WNDPROC" << std::endl;
+        std::cout << "[I] Hooked setCursorPos : " << std::hex << glb::ocursor << std::endl;
 
-    std::cout << "[I] Hooked WNDPROC" << std::endl;
-    std::cout << "[I] Hooked setCursorPos : " << std::hex << glb::ocursor << std::endl;
+        sigscanItems();
 
-    sigscanItems();
+        std::cout << "[I] Completed sigscanning" << std::endl;
 
-    std::cout << "[I] Completed sigscanning" << std::endl;
+        LUA::HookRegisterGameFunctions();
 
-    LUA::HookRegisterGameFunctions();
+        std::cout << "[I] Hooked Lua" << std::endl;
 
-    std::cout << "[I] Hooked Lua" << std::endl;
+        initTestHook();
+        focusHook::initFocusHook();
+        constClock::beginConstantClock(16.6f * 2);
 
-    initTestHook();
-    focusHook::initFocusHook();
-    constClock::beginConstantClock(16.6f*2);
+        TDMP::Init();
+        //initMovementHook();
 
-    TDMP::Init();
-    //initMovementHook();
+        while (true) {
+            if (((GetAsyncKeyState(VK_END) >> 15) & 0x0001) == 0x0001) {
+                if (true) {
 
-    while (true) {
-        if (((GetAsyncKeyState(VK_END) >> 15) & 0x0001) == 0x0001) {
-            if (true) {
+                    ////undo hooks
+                    terminateSwapBuffersHook();
+                    fclose(cnsl);
+                    FreeConsole();
 
-                ////undo hooks
-                terminateSwapBuffersHook();
-                fclose(cnsl);
-                FreeConsole();
+                    terminateMovementHook();
+                    terminateHIDsHook();
+                    terminateTestHook();
+                    focusHook::terminateFocusHook();
+                    constClock::endConstantClock();
 
-                terminateMovementHook();
-                terminateHIDsHook();
-                terminateTestHook();
-                focusHook::terminateFocusHook();
-                constClock::endConstantClock();
+                    //sleep
+                    Sleep(250);
 
-                //sleep
-                Sleep(250);
-
-                //exit
-                FreeLibraryAndExitThread(hModule, 0);
+                    //exit
+                    FreeLibraryAndExitThread(hModule, 0);
+                }
             }
+            Sleep(1);
         }
-        Sleep(1);
+    }
+    __except (cHandler::handleException(GetExceptionCode(), GetExceptionInformation())) {
+        exit(0);
     }
 }
 

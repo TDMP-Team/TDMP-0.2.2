@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|Win32">
@@ -68,6 +68,7 @@
   </ImportGroup>
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+    <Import Project="PropertySheet.props" />
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
@@ -81,8 +82,8 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
-    <IncludePath>E:\visual studio projects\knedmod\MS Detours;E:\visual studio projects\knedmod\glew\GL;E:\visual studio projects\knedmod\lua-5.1.4;$(IncludePath)</IncludePath>
-    <LibraryPath>E:\visual studio projects\knedmod\lua-5.1.4;E:\visual studio projects\knedmod\MS Detours;E:\visual studio projects\knedmod\glew;$(LibraryPath)</LibraryPath>
+    <IncludePath>$(SolutionDir)MS Detours;$(SolutionDir)glew\GL;$(SolutionDir)lua-5.1.4;$(IncludePath)</IncludePath>
+    <LibraryPath>$(SolutionDir)lua-5.1.4;$(SolutionDir)MS Detours;$(SolutionDir)glew;$(LibraryPath)</LibraryPath>
     <ExternalIncludePath>$(ExternalIncludePath)</ExternalIncludePath>
     <TargetName>tdmp</TargetName>
   </PropertyGroup>
@@ -151,7 +152,7 @@
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
-      <AdditionalIncludeDirectories>E:\visual studio projects\knedmod\diddlerInternal\glm</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)diddlerInternal\glm</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
@@ -198,7 +199,6 @@
     <ClInclude Include="multiplayer\Messages.h" />
     <ClInclude Include="multiplayer\Player.h" />
     <ClInclude Include="multiplayer\Server.h" />
-    <ClInclude Include="console.h" />
     <ClInclude Include="constClock.h" />
     <ClInclude Include="detours.h" />
     <ClInclude Include="detver.h" />
@@ -230,6 +230,7 @@
     <ClInclude Include="mem.h" />
     <ClInclude Include="swapBuffers.h" />
     <ClInclude Include="TDObjects.h" />
+    <ClInclude Include="td_memory.h" />
     <ClInclude Include="types.h" />
   </ItemGroup>
   <ItemGroup>
@@ -265,7 +266,6 @@
     <ClCompile Include="..\lua-5.1.4\lvm.c" />
     <ClCompile Include="..\lua-5.1.4\lzio.c" />
     <ClCompile Include="..\lua-5.1.4\print.c" />
-    <ClCompile Include="console.cpp" />
     <ClCompile Include="constClock.cpp" />
     <ClCompile Include="crashHandler.cpp" />
     <ClCompile Include="dllmain.cpp" />

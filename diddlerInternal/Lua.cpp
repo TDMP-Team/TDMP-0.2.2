@@ -6,6 +6,7 @@
 #include "multiplayer/Client.h"
 #include "multiplayer/Server.h"
 #include "multiplayer/Player.h"
+#include "multiplayer/Lobby.h"
 
 #include <vector>
 #include <map>
@@ -101,15 +102,14 @@ void pushstring(lua_State* L, const char* str)
 
 #define api_incr_top(L)   {api_check(L, L->top < L->ci->top); L->top++;}
 
-void Tick(CScriptCore* pSC, lua_State* L, CRetInfo* ret)
+void Tick(CScriptCore* pSC, lua_State*& L, CRetInfo* ret)
 {
 	TDMP::LuaTick();
 }
 
 std::vector<LUA::Callback> LUA::callbacks{};
-void RegisterCallback(CScriptCore* pSC, lua_State* L, CRetInfo* ret)
+void RegisterCallback(CScriptCore* pSC, lua_State*& L, CRetInfo* ret)
 {
-	TDMP::Debug::print(L);
 	int top = lua_gettop(L);
 
 	const char* callbackName = luaL_checkstring(L, 1);
@@ -140,7 +140,7 @@ struct callHook
 
 std::map<int, std::vector<callHook>> hookQueue;
 
-void AddHook(CScriptCore* pSC, lua_State* L, CRetInfo* ret)
+void AddHook(CScriptCore* pSC, lua_State*& L, CRetInfo* ret)
 {
 	int top = lua_gettop(L);
 
@@ -186,7 +186,7 @@ void LUA::RunLuaHooks(const char* hookName, const char* jsonData)
 	}
 }
 
-void RunGlobalHook(CScriptCore* pSC, lua_State* L, CRetInfo* ret)
+void RunGlobalHook(CScriptCore* pSC, lua_State*& L, CRetInfo* ret)
 {
 	int top = lua_gettop(L);
 
@@ -197,7 +197,7 @@ void RunGlobalHook(CScriptCore* pSC, lua_State* L, CRetInfo* ret)
 	LUA::RunLuaHooks(hookName, jsonData);
 }
 
-void RunHooks(CScriptCore* pSC, lua_State* L, CRetInfo* ret)
+void RunHooks(CScriptCore* pSC, lua_State*& L, CRetInfo* ret)
 {
 	for (size_t i = 0; i < hookQueue[(int)L].size(); i++)
 	{
@@ -241,8 +241,7 @@ void LUA::CallCallbacks(const char* callbackName)
 	}
 }
 
-// TODO: Push SteamId of sender to the server
-void LUA::CallEvent(const char* eventName, const char* jsonData)
+void LUA::CallEvent(const char* eventName, const char* jsonData, std::string steamId)
 {
 	for (size_t i = 0; i < callbacks.size(); i++)
 	{
@@ -256,7 +255,12 @@ void LUA::CallEvent(const char* eventName, const char* jsonData)
 			lua_rawgeti(callback->L, LUA_REGISTRYINDEX, callback->ref);
 
 			pushstring(callback->L, jsonData);
-			if (pcall(callback->L, 1, 0, 0))
+			
+			bool isServ = TDMP::IsServer();
+			if (isServ)
+				pushstring(callback->L, steamId.c_str());
+
+			if (pcall(callback->L, isServ ? 2 : 1, 0, 0))
 			{
 				const char* err = lua_tolstring(callback->L, -1, NULL);
 				TDMP::Debug::error(err);
@@ -267,7 +271,7 @@ void LUA::CallEvent(const char* eventName, const char* jsonData)
 	}
 }
 
-void SendCallback(CScriptCore* pSC, lua_State* L, CRetInfo* ret)
+void SendCallback(CScriptCore* pSC, lua_State*& L, CRetInfo* ret)
 {
 	int top = lua_gettop(L);
 
@@ -334,7 +338,7 @@ void SendCallback(CScriptCore* pSC, lua_State* L, CRetInfo* ret)
 	TDMP::client->SendData(&msg, sizeof(msg), sendType);
 }
 
-void BroadcastCallback(CScriptCore* pSC, lua_State* L, CRetInfo* ret)
+void BroadcastCallback(CScriptCore* pSC, lua_State*& L, CRetInfo* ret)
 {
 	int top = lua_gettop(L);
 
@@ -350,7 +354,9 @@ void BroadcastCallback(CScriptCore* pSC, lua_State* L, CRetInfo* ret)
 	const char* callbackName = luaL_checkstring(L, 1);
 	bool reliable = lua_toboolean(L, 2);
 	bool sendSelf = lua_toboolean(L, 3);
-	const char* json = luaL_checkstring(L, 4);
+
+	size_t realLength;
+	const char* json = lua_tolstring(L, 4, &realLength);
 
 	lua_pop(L, top);
 
@@ -413,7 +419,7 @@ void pushplayer(lua_State* L, int plyId)
 	}
 }
 
-void GetPlayerTransform(CScriptCore* pSC, lua_State* L, int* ret)
+void GetPlayerTransform(CScriptCore* pSC, lua_State*& L, CRetInfo* ret)
 {
 	int id = luaL_checkinteger(L, 1);
 	lua_pop(L, 1);
@@ -465,10 +471,10 @@ void GetPlayerTransform(CScriptCore* pSC, lua_State* L, int* ret)
 		settable(L, -3);
 	settable(L, -3);
 
-	(*ret) = 1;
+	ret->retCount = 1;
 }
 
-void GetPlayerCameraTransform(CScriptCore* pSC, lua_State* L, int* ret)
+void GetPlayerCameraTransform(CScriptCore* pSC, lua_State*& L, CRetInfo* ret)
 {
 	int id = luaL_checkinteger(L, 1);
 	lua_pop(L, 1);
@@ -520,13 +526,13 @@ void GetPlayerCameraTransform(CScriptCore* pSC, lua_State* L, int* ret)
 		settable(L, -3);
 	settable(L, -3);
 
-	(*ret) = 1;
+	ret->retCount = 1;
 }
 
 /// <summary>
 /// Returns table of active players
 /// </summary>
-void GetPlayers(CScriptCore* pSC, lua_State* L, int* ret)
+void GetPlayers(CScriptCore* pSC, lua_State*& L, CRetInfo* ret)
 {
 	glb::olua_createtable(L, 0, 0);
 
@@ -543,13 +549,13 @@ void GetPlayers(CScriptCore* pSC, lua_State* L, int* ret)
 		}
 	}
 
-	(*ret) = 1;
+	ret->retCount = 1;
 }
 
 /// <summary>
 /// Returns player at specific id
 /// </summary>
-void GetPlayer(CScriptCore* pSC, lua_State* L, int* ret)
+void GetPlayer(CScriptCore* pSC, lua_State*& L, CRetInfo* ret)
 {
 	int id = luaL_checkinteger(L, 1);
 	lua_pop(L, 1);
@@ -563,13 +569,13 @@ void GetPlayer(CScriptCore* pSC, lua_State* L, int* ret)
 
 	pushplayer(L, id);
 
-	(*ret) = 1;
+	ret->retCount = 1;
 }
 
 /// <summary>
 /// This function returns not cached player's nick
 /// </summary>
-void GetNick(CScriptCore* pSC, lua_State* L, int* ret)
+void GetNick(CScriptCore* pSC, lua_State*& L, CRetInfo* ret)
 {
 	int id = luaL_checkinteger(L, 1);
 	lua_pop(L, lua_gettop(L));
@@ -583,17 +589,17 @@ void GetNick(CScriptCore* pSC, lua_State* L, int* ret)
 
 	pushstring(L, SteamFriends()->GetPlayerNickname(TDMP::players[id].SteamId));
 
-	(*ret) = 1;
+	ret->retCount = 1;
 }
 
-void GetLocalNick(CScriptCore* pSC, lua_State* L, int* ret)
+void GetLocalNick(CScriptCore* pSC, lua_State*& L, CRetInfo* ret)
 {
 	pushstring(L, SteamFriends()->GetFriendPersonaName(SteamUser()->GetSteamID()));
 
-	(*ret) = 1;
+	ret->retCount = 1;
 }
 
-void GetHeldItem(CScriptCore* pSC, lua_State* L, int* ret)
+void GetHeldItem(CScriptCore* pSC, lua_State*& L, CRetInfo* ret)
 {
 	int id = luaL_checkinteger(L, 1);
 	lua_pop(L, lua_gettop(L));
@@ -607,10 +613,65 @@ void GetHeldItem(CScriptCore* pSC, lua_State* L, int* ret)
 
 	pushstring(L, TDMP::players[id].heldItem.c_str());
 
-	(*ret) = 1;
+	ret->retCount = 1;
 }
 
-void GetTableId(CScriptCore* pSC, lua_State* L, int* ret)
+void GetToolTransform(CScriptCore* pSC, lua_State*& L, CRetInfo* ret)
+{
+	int id = luaL_checkinteger(L, 1);
+	lua_pop(L, lua_gettop(L));
+
+	if (id > TDMP::MaxPlayers - 1 || id < 0)
+	{
+		glb::oluaL_error(L, "incorrect id (must be 0-%d)", TDMP::MaxPlayers - 1);
+
+		return;
+	}
+
+	TDMP::Player ply = TDMP::players[id];
+
+	glb::olua_createtable(L, 0, 2);
+
+	pushstring(L, "pos");
+	glb::olua_createtable(L, 0, 3);
+
+	lua_pushnumber(L, 1);
+	lua_pushnumber(L, ply.ToolPosition.x);
+	settable(L, -3);
+
+	lua_pushnumber(L, 2);
+	lua_pushnumber(L, ply.ToolPosition.y);
+	settable(L, -3);
+
+	lua_pushnumber(L, 3);
+	lua_pushnumber(L, ply.ToolPosition.z);
+	settable(L, -3);
+	settable(L, -3);
+
+	pushstring(L, "rot");
+	glb::olua_createtable(L, 0, 4);
+
+	lua_pushnumber(L, 1);
+	lua_pushnumber(L, ply.ToolRotation.w);
+	settable(L, -3);
+
+	lua_pushnumber(L, 2);
+	lua_pushnumber(L, ply.ToolRotation.x);
+	settable(L, -3);
+
+	lua_pushnumber(L, 3);
+	lua_pushnumber(L, ply.ToolRotation.y);
+	settable(L, -3);
+
+	lua_pushnumber(L, 4);
+	lua_pushnumber(L, ply.ToolRotation.z);
+	settable(L, -3);
+	settable(L, -3);
+
+	ret->retCount = 1;
+}
+
+void GetTableId(CScriptCore* pSC, lua_State*& L, CRetInfo* ret)
 {
 	int top = lua_gettop(L);
 
@@ -621,11 +682,11 @@ void GetTableId(CScriptCore* pSC, lua_State* L, int* ret)
 	{
 		lua_pushinteger(L, TDMP::playersBySteamId[steamId]);
 
-		(*ret) = 1;
+		ret->retCount = 1;
 	}
 }
 
-void IsMe(CScriptCore* pSC, lua_State* L, int* ret)
+void IsMe(CScriptCore* pSC, lua_State*& L, CRetInfo* ret)
 {
 	int id = luaL_checkinteger(L, 1);
 	lua_pop(L, 1);
@@ -639,12 +700,12 @@ void IsMe(CScriptCore* pSC, lua_State* L, int* ret)
 
 	lua_pushboolean(L, TDMP::players[id].IsMe());
 
-	(*ret) = 1;
+	ret->retCount = 1;
 }
 
 bool notCached = true;
 std::string localSteamId;
-void LocalSteamId(CScriptCore* pSC, lua_State* L, int* ret)
+void LocalSteamId(CScriptCore* pSC, lua_State*& L, CRetInfo* ret)
 {
 	if (notCached)
 	{
@@ -655,24 +716,24 @@ void LocalSteamId(CScriptCore* pSC, lua_State* L, int* ret)
 
 	pushstring(L, localSteamId.c_str());
 
-	(*ret) = 1;
+	ret->retCount = 1;
 }
 
-void IsServerInitialised(CScriptCore* pSC, lua_State* L, int* ret)
+void IsServerInitialised(CScriptCore* pSC, lua_State*& L, CRetInfo* ret)
 {
 	lua_pushboolean(L, TDMP::server != nullptr);
 
-	(*ret) = 1;
+	ret->retCount = 1;
 }
 
-void IsServer(CScriptCore* pSC, lua_State* L, int* ret)
+void IsServer(CScriptCore* pSC, lua_State*& L, CRetInfo* ret)
 {
 	lua_pushboolean(L, TDMP::IsServer());
 
-	(*ret) = 1;
+	ret->retCount = 1;
 }
 
-void SetPlayerModelEnabled(CScriptCore* pSC, lua_State* L, int* ret)
+void SetPlayerModelEnabled(CScriptCore* pSC, lua_State*& L, CRetInfo* ret)
 {
 	int id = luaL_checkinteger(L, 1);
 	bool enable = lua_toboolean(L, 2);
@@ -701,7 +762,7 @@ void SetPlayerModelEnabled(CScriptCore* pSC, lua_State* L, int* ret)
 	}
 }
 
-void GetPlayerModelEnabled(CScriptCore* pSC, lua_State* L, int* ret)
+void GetPlayerModelEnabled(CScriptCore* pSC, lua_State*& L, CRetInfo* ret)
 {
 	int id = luaL_checkinteger(L, 1);
 	lua_pop(L, lua_gettop(L));
@@ -715,10 +776,10 @@ void GetPlayerModelEnabled(CScriptCore* pSC, lua_State* L, int* ret)
 
 	lua_pushboolean(L, !TDMP::players[id].hideBody);
 
-	(*ret) = 1;
+	ret->retCount = 1;
 }
 
-void ConsolePrint(CScriptCore* pSC, lua_State* L, int* ret)
+void ConsolePrint(CScriptCore* pSC, lua_State*& L, CRetInfo* ret)
 {
 	int top = lua_gettop(L);
 
@@ -731,25 +792,314 @@ void ConsolePrint(CScriptCore* pSC, lua_State* L, int* ret)
 	TDMP::Debug::print(output);
 }
 
-void Update(CScriptCore* pSC, lua_State* L, int* ret)
+void Update(CScriptCore* pSC, lua_State*& L, CRetInfo* ret)
 {
 	TDMP::LuaUpdate();
 }
 
-void Time(CScriptCore* pSC, lua_State* L, int* ret)
+void Time(CScriptCore* pSC, lua_State*& L, CRetInfo* ret)
 {
 	lua_pushnumber(L, ((lua_Number)clock()) / (lua_Number)CLOCKS_PER_SEC);
 
-	(*ret) = 1;
+	ret->retCount = 1;
+}
+
+std::map<std::string, LUA::tool> toolsModels{};
+LUA::tool* LUA::GetTool(std::string toolName)
+{
+	if (toolsModels.count(toolName))
+		return &toolsModels[toolName];
+	else
+		return nullptr;
+}
+
+std::string convertLuaPath(std::string luaPath, CScriptCore* pSC)
+{
+	if (luaPath.substr(0, 3) == "MOD")
+	{
+		return std::string(pSC->m_ScriptLocation.c_str()) + luaPath.substr(3, luaPath.size());
+	}
+	else if (luaPath.substr(0, 5) == "LEVEL")
+	{
+		// TODO
+	}
+	else if (luaPath.substr(0, 4) == "data" || luaPath.substr(0, 6) == "KM_Vox")
+	{
+		return luaPath;
+	}
+
+	return "";
+}
+
+void RegisterTool(CScriptCore* pSC, lua_State*& L, CRetInfo* ret)
+{
+	const char* tool = luaL_checkstring(L, 1);
+	const char* path = luaL_checkstring(L, 2);
+	float scale = luaL_optnumber(L, 3, 0.5f);
+	lua_pop(L, 3);
+
+	std::string sPath(path);
+	if (sPath.substr(sPath.size() - 4, sPath.size()) != std::string(".vox") || sPath.find(":") != std::string::npos) // ":" prevents from using C:/ or http:/ or file:/ and etc
+	{
+		glb::oluaL_error(L, "Invalid path to .vox file! %s", path);
+
+		return;
+	}
+
+	std::string realPath = convertLuaPath(sPath, pSC);
+
+	toolsModels[tool] = LUA::tool{realPath, scale};
+}
+
+void GetToolBody(CScriptCore* pSC, lua_State*& L, CRetInfo* ret)
+{
+	int id = luaL_checkinteger(L, 1);
+	lua_pop(L, lua_gettop(L));
+
+	if (id > TDMP::MaxPlayers - 1 || id < 0)
+	{
+		glb::oluaL_error(L, "incorrect id (must be 0-%d)", TDMP::MaxPlayers - 1);
+
+		return;
+	}
+
+	TDMP::Player ply = TDMP::players[id];
+	lua_pushnumber(L, ply.toolBody.body != 0 ? (ply.toolBody.body->Id) : 0);
+
+	ret->retCount = 1;
+}
+
+void GetTDMPVersion(CScriptCore* pSC, lua_State*& L, CRetInfo* ret)
+{
+	pushstring(L, TDMP::Version.c_str());
+
+	ret->retCount = 1;
+}
+
+void GetLobbyMembers(CScriptCore* pSC, lua_State*& L, CRetInfo* ret)
+{
+	if (TDMP::lobby == 0)
+		return;
+
+	uint64 id = TDMP::lobby->id;
+	int memCount = SteamMatchmaking()->GetNumLobbyMembers(id);
+
+	glb::olua_createtable(L, 0, memCount);
+	for (int i = 0; i < memCount; i++)
+	{
+		CSteamID steamId = SteamMatchmaking()->GetLobbyMemberByIndex(id, i);
+		lua_pushnumber(L, i + 1);
+		
+		glb::olua_createtable(L, 0, 3);
+			pushstring(L, "steamId");
+				pushstring(L, std::to_string(steamId.ConvertToUint64()).c_str());
+			settable(L, -3);
+
+			pushstring(L, "nick");
+				pushstring(L, SteamFriends()->GetFriendPersonaName(steamId));
+			settable(L, -3);
+
+			pushstring(L, "host");
+			lua_pushboolean(L, TDMP::lobby->IsHost(steamId));
+			settable(L, -3);
+		settable(L, -3);
+	}
+
+	ret->retCount = 1;
+}
+
+float clamp(float n, float lower, float upper) {
+	return std::max(lower, std::min(n, upper));
+}
+
+std::map<int, TDBody*> LUA::spawnedBodies;
+void SpawnVox(CScriptCore* pSC, lua_State*& L, CRetInfo* ret)
+{
+	const char* path = luaL_checkstring(L, 1);
+	float scale = luaL_checknumber(L, 2);
+	lua_pop(L, 2);
+
+	std::string sPath(path);
+	if (sPath.substr(sPath.size() - 4, sPath.size()) != std::string(".vox") || sPath.find(":") != std::string::npos) // ":" prevents from using C:/ or http:/ or file:/ and etc
+	{
+		glb::oluaL_error(L, "Invalid path to .vox file! %s", path);
+
+		return;
+	}
+
+	std::string realPath = convertLuaPath(std::string(path), pSC);
+
+	spawner::freeObjectSpawnParams params = {};
+	params.useUserRotation = false;
+
+	spawner::spawnedObject body;
+	spawner::spawnFreeEntity(realPath, params, &body, clamp(scale, 0.1f, 3.f));
+
+	lua_pushnumber(L, body.body->Id);
+
+	LUA::spawnedBodies[body.body->Id] = body.body;
+
+	ret->retCount = 1;
+}
+
+void FindShape(CScriptCore* pSC, lua_State*& L, CRetInfo* ret)
+{
+	int shapeId = luaL_checknumber(L, 1);
+	lua_pop(L, 1);
+
+	for (size_t i = 0; i < glb::scene->m_Shapes->size(); i++)
+	{
+		TDShape* s = glb::scene->m_Shapes->data()[i];
+
+		if (s->Id == shapeId)
+		{
+			TDMP::Debug::print(s);
+			TDMP::Debug::print((char*)s + 0x38);
+			TDMP::Debug::print(std::addressof(s->collide));
+
+		}
+	}
+}
+
+void WeldBodies(CScriptCore* pSC, lua_State*& L, CRetInfo* ret)
+{
+	int parentBodyId = luaL_checkinteger(L, 1);
+	int childBodyId = luaL_checkinteger(L, 2);
+	int parentShapeId = luaL_checkinteger(L, 3);
+	int childShapeId = luaL_checkinteger(L, 4);
+	lua_pop(L, 4);
+
+	if (parentBodyId == parentShapeId || childBodyId == childShapeId)
+		return;
+
+	if (!LUA::spawnedBodies.count(parentBodyId) && !TDMP::levelBodiesById.count(parentBodyId))
+		return;
+
+	if (!LUA::spawnedBodies.count(childBodyId) && !TDMP::levelBodiesById.count(childBodyId))
+		return;
+
+	TDBody* parentBody = LUA::spawnedBodies.count(parentBodyId) ? LUA::spawnedBodies[parentBodyId] : TDMP::levelBodies[TDMP::levelBodiesById[parentBodyId]];
+	TDBody* childBody = LUA::spawnedBodies.count(childBodyId) ? LUA::spawnedBodies[childBodyId] : TDMP::levelBodies[TDMP::levelBodiesById[childBodyId]];
+
+	int body1ShapeCount = parentBody->countContainedShapes();
+	int body2ShapeCount = childBody->countContainedShapes();
+
+	TDShape* targetShape = 0;
+	TDBody* newBody = 0;
+	TDBody* oldBody = 0;
+
+	//decide which parent is kept
+	if (body1ShapeCount >= body2ShapeCount) {
+		//move shapes from body2 to body1
+		targetShape = (TDShape*)childBody->pChild;
+		newBody = parentBody;
+		oldBody = childBody;
+	}
+	else {
+		//move shapes from body1 to body2
+		targetShape = (TDShape*)parentBody->pChild;
+		newBody = childBody;
+		oldBody = parentBody;
+	}
+
+	std::vector<TDShape*> scheduledShapes = {};
+	int transferCounter = 0;
+
+	//iterate children on the doomed parent and schedule them for transfer
+	while (targetShape != 0) {
+		std::cout << targetShape << " : " << entityTypeStr[(int)targetShape->Type - 1] << std::endl;
+		if ((int)targetShape->Type == 2) {
+			scheduledShapes.push_back(targetShape);
+		}
+		else {
+			continue;
+		}
+		targetShape = (TDShape*)targetShape->pSibling;
+	}
+
+	//transfer all children to the new parent, destroy the old one
+	for (TDShape* targetShape : scheduledShapes) {
+		transferCounter++;
+
+		glm::vec3 targetShapeWorldPosition = math::expandPosition(math::q_td2glm(targetShape->getParentBody()->Rotation), math::v3_td2glm(targetShape->getParentBody()->Position), math::v3_td2glm(targetShape->pOffset));
+		glm::quat targetShapeWorldrotation = math::expandRotation(math::q_td2glm(targetShape->getParentBody()->Rotation), math::q_td2glm(targetShape->rOffset));
+		glm::vec3 targetShapeNewPOffset = math::localisePosition(math::q_td2glm(newBody->Rotation), math::v3_td2glm(newBody->Position), targetShapeWorldPosition);
+		glm::quat targetShapeNewROffset = math::localiseRotation(math::q_td2glm(newBody->Rotation), targetShapeWorldrotation);
+
+		glb::tdUpdateShapeBody((uintptr_t)targetShape, (uintptr_t)newBody);
+		targetShape->pOffset = { targetShapeNewPOffset.x, targetShapeNewPOffset.y, targetShapeNewPOffset.z };
+		*(glm::quat*)&targetShape->rOffset = targetShapeNewROffset;
+	}
+
+	glb::oUpdateShapes((uintptr_t)newBody);
+	glb::tdUpdateFunc(newBody, 0, 1);
+	//std::cout << "(WELD) Transfered " << std::to_string(transferCounter) << " shapes from " << std::hex << oldBody << " to " << newBody << std::endl;
+	oldBody->Destroy(oldBody, true);
+}
+
+// TODO: Get fucking rid of that shit
+void ShareCurrentTool(CScriptCore* pSC, lua_State*& L, CRetInfo* ret)
+{
+	const char* tool = luaL_checkstring(L, 1);
+
+	lua_rawgeti(L, 2, 1);
+	lua_rawgeti(L, 2, 2);
+	lua_rawgeti(L, 2, 3);
+
+	float posX = lua_tonumber(L, -3);
+	float posY = lua_tonumber(L, -2);
+	float posZ = lua_tonumber(L, -1);
+
+	lua_rawgeti(L, 3, 1);
+	lua_rawgeti(L, 3, 2);
+	lua_rawgeti(L, 3, 3);
+	lua_rawgeti(L, 3, 4);
+
+	float rotW = lua_tonumber(L, -4);
+	float rotX = lua_tonumber(L, -3);
+	float rotY = lua_tonumber(L, -2);
+	float rotZ = lua_tonumber(L, -1);
+
+	lua_pop(L, lua_gettop(L));
+
+	if (strlen(tool) > 32)
+	{
+		glb::oluaL_error(L, "Tool name is too long! %d", strlen(tool));
+		
+		return;
+	}
+
+	TDMP::CurrentTool = std::string(tool);
+	TDMP::toolPos = td::Vec3{ posX, posY, posZ };
+	TDMP::toolRot = td::Vec4{ rotW, rotX, rotY, rotZ };
+}
+
+void GetHost(CScriptCore* pSC, lua_State*& L, CRetInfo* ret)
+{
+	CSteamID id = SteamMatchmaking()->GetLobbyOwner(TDMP::lobby->id);
+	
+	pushplayer(L, TDMP::playersBySteamId[std::to_string(id.ConvertToUint64()).c_str()]);
+
+	ret->retCount = 1;
 }
 
 void LUA::RegisterLuaCFunctions(CScriptCore_LuaState* pSCLS)
 {
 	hookQueue[(int)*pSCLS->m_LuaState] = std::vector<callHook>{};
 
-	RegisterLuaFunction(pSCLS, "TDMP_ConPrint", ConsolePrint);
+	RegisterLuaFunction(pSCLS, "TDMP_ShareCurrentTool", ShareCurrentTool);
 
+	RegisterLuaFunction(pSCLS, "TDMP_SpawnVox", SpawnVox);
+	RegisterLuaFunction(pSCLS, "TDMP_Weld", WeldBodies);
+	RegisterLuaFunction(pSCLS, "TDMP_RegisterToolVox", RegisterTool);
+
+	RegisterLuaFunction(pSCLS, "TDMP_GetLobbyMembers", GetLobbyMembers);
+	RegisterLuaFunction(pSCLS, "TDMP_GetLobbyHost", GetHost);
+
+	RegisterLuaFunction(pSCLS, "TDMP_ConPrint", ConsolePrint);
 	RegisterLuaFunction(pSCLS, "TDMP_UnixTime", Time);
+	RegisterLuaFunction(pSCLS, "TDMP_Version", GetTDMPVersion);
+
 	RegisterLuaFunction(pSCLS, "TDMP_Tick", Tick);
 	RegisterLuaFunction(pSCLS, "TDMP_Update", Update);
 	RegisterLuaFunction(pSCLS, "TDMP_IsServerInitialised", IsServerInitialised);
@@ -766,6 +1116,8 @@ void LUA::RegisterLuaCFunctions(CScriptCore_LuaState* pSCLS)
 	RegisterLuaFunction(pSCLS, "TDMP_GetPlayerCameraTransform", GetPlayerCameraTransform);
 	RegisterLuaFunction(pSCLS, "TDMP_GetPlayerBodyEnabled", GetPlayerModelEnabled);
 	RegisterLuaFunction(pSCLS, "TDMP_SetPlayerBodyEnabled", SetPlayerModelEnabled);
+	RegisterLuaFunction(pSCLS, "TDMP_GetPlayerToolTransform", GetToolTransform);
+	RegisterLuaFunction(pSCLS, "TDMP_GetPlayerToolBody", GetToolBody);
 
 	RegisterLuaFunction(pSCLS, "TDMP_LocalNickname", GetLocalNick);
 	RegisterLuaFunction(pSCLS, "TDMP_LocalSteamId", LocalSteamId);
@@ -780,20 +1132,13 @@ void hRegisterGameFunctions(CScriptCore* pSC)
 {
 	glb::RegisterGameFunctions(pSC);
 
-	TDMP::Debug::print("Registering lua functions");
+	TDMP::Debug::print(std::string("Registering lua functions for ") + pSC->m_ScriptLocation.c_str());
 
 	LUA::RegisterLuaCFunctions(&pSC->m_SCLuaState);
 }
 
-int hluaL_loadbuffer(lua_State* L, const char* buff, size_t size, const char* name)
-{
-	return glb::oluaL_loadbuffer(L, buff, size, name);
-}
-
 void makehole(TDScene* scene, td::Vec3* position, float damageA, float damageB, int unkn1, int* unkn2)
 {
-	TDMP::Debug::print("makeHoleWrapped was called");
-
 	MsgSledgeHit msg;
 	msg.SetData(*position, damageA, damageB);
 
@@ -812,10 +1157,10 @@ void LUA::HookRegisterGameFunctions()
 	DetourAttach(&(PVOID&)glb::RegisterGameFunctions, hRegisterGameFunctions);
 	DetourTransactionCommit();
 
-	/*DetourTransactionBegin();
+	DetourTransactionBegin();
 	DetourUpdateThread(GetCurrentThread());
 	DetourAttach(&(PVOID&)glb::oWrappedDamage, makehole);
-	DetourTransactionCommit();*/
+	DetourTransactionCommit();
 }
 
 int CallLuaFunction(lua_State* L) {
@@ -823,18 +1168,20 @@ int CallLuaFunction(lua_State* L) {
 	LUA::tLuaFunction pFunction = reinterpret_cast<LUA::tLuaFunction>(lua_topointer(L, lua_upvalueindex(1)));
 	const void* pScriptCore = lua_topointer(L, lua_upvalueindex(2));
 
-	pFunction(reinterpret_cast<const CScriptCore*>(pScriptCore), L, &iRetCount);
+	const CScriptCore* sc = reinterpret_cast<const CScriptCore*>(pScriptCore);
+
+	pFunction(sc, L, &iRetCount);
 
 	return iRetCount;
 }
 
 void LUA::RegisterLuaFunction(CScriptCore_LuaState* pSCLS, const char* cFunctionName, void* pFunction)
 {
-	lua_pushlightuserdata(*pSCLS->m_LuaState, pFunction);
-	lua_pushlightuserdata(*pSCLS->m_LuaState, pSCLS);
-	lua_pushcclosure(*pSCLS->m_LuaState, CallLuaFunction, 2);
+	//lua_pushlightuserdata(*pSCLS->m_LuaState, pFunction);
+	//lua_pushlightuserdata(*pSCLS->m_LuaState, pSCLS);
+	//lua_pushcclosure(*pSCLS->m_LuaState, CallLuaFunction, 2);
 
-	lua_setglobal(*pSCLS->m_LuaState, cFunctionName);
-	//glb::tdRegisterLuaFunction(pSCLS, cFunctionName, pFunction);
-
+	//lua_setglobal(*pSCLS->m_LuaState, cFunctionName);
+	td::small_string cFuncName(cFunctionName);
+	glb::tdRegisterLuaFunction(pSCLS, &cFuncName, pFunction);
 }

@@ -1,5 +1,6 @@
 #pragma once
 #include "types.h"
+#include "td_memory.h"
 
 struct lua_State;
 

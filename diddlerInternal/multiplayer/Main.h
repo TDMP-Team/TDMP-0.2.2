@@ -11,6 +11,11 @@ struct MsgBody;
 
 namespace TDMP
 {
+    // TODO: Get rid of that
+    extern std::string CurrentTool;
+    extern td::Vec3 toolPos;
+    extern td::Vec4 toolRot;
+
     /// <summary>
     /// Max amount player for server. Default: 6
     /// </summary>
@@ -126,11 +131,6 @@ namespace TDMP
     /// Calls at fixed time (60Hz)
     /// </summary>
     void Tick();
-
-    /// <summary>
-    /// Calls each frame
-    /// </summary>
-    void Frame();
 
     void LuaTick();
     void LuaUpdate();

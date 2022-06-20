@@ -3,6 +3,7 @@
 #include "TDFuncs.h"
 #include "maths.h"
 #include "glm/gtc/quaternion.hpp"
+#include "td_memory.h"
 
 //thanks nahu for the entity structures
 
@@ -61,8 +62,8 @@ public:
 	entityType	Type;			//0x08
 	int8_t		Flags;			//0x09
 	char		pad_000A[2]; //0x000A
-	int16_t		Id; //0x000C
-	char		pad_000E[2];	//0x0E
+	int		Id; //0x000C
+	//char		pad_000E[2];	//0x0E
 	Entity* pParent;		//0x10
 	Entity* pSibling;		//0x18
 	Entity* pChild;			//0x20
@@ -168,7 +169,7 @@ public:
     td::Vec3 posMin; //0x001C
     td::Vec3 posMax; //0x0028
     char pad_0034[22]; //0x0034
-    bool collide; //0x004A
+    bool collide; //0x0072
     char pad_004B[9]; //0x004B
     int32_t Texture; //0x007C
     char pad_0080[24]; //0x0080
@@ -213,7 +214,6 @@ public:
 };
 
 
-// TODO: Fix offsets, "health" isn't health anymore
 class TDPlayer {
 public:
 	td::Vec3 position;			//0x000 - 0x012
@@ -232,10 +232,15 @@ public:
 	byte isAttackingSecondary;
 	byte isAttackingPadding;
 	byte isAttacking;			//0x0EA - 0x0EB
-	byte paddingF[0x74];		//0x0EB - 0x154
+	byte padding[0x28];
+	TDBody* grabbedBody;
+	byte paddingF[0x4C - 0x04 - 8];		//0x0EB - 0x154
+	//byte paddingF[0x74];
 	float health;				//0x15C - 0x160
 	byte paddingG[0x484];		//0x160 - 0x418
-	char heldItemName[13];		//0x3CB - 0x3D8
+	td::small_string heldItemName;		//0x3CB - 0x3D8
+	//char pad[13];
+	TDBody* toolBody;
 
 	td::Vec3 cameraEuler() {
 		float vecX = -(2 * (cameraQuat.w * cameraQuat.y + cameraQuat.z * cameraQuat.x));
@@ -516,7 +521,13 @@ public:
 	char pad_0088[24];				//0x0088
 	TDPlayer* m_Player;				//0x00A0
 	void* m_PathMgr;				//0x00A8
-	char pad_00A8[48];				//0x00B0
+	//char pad_00A8[48];				//0x00B0
+	void* N00000084; //0x00B0
+	void* N00000085; //0x00B8
+	void* m_Registry; //0x00C0
+	void* N00000087; //0x00C8
+	void* N00000088; //0x00D0
+	void* m_Debug; //0x00D8
 	void* m_SteamInterface;			//0x00E0 - To be used for mod sync
 	char pad_00E8[48];				//0x00E8
 	bool m_Paused;					//0x0118
