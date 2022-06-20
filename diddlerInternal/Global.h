@@ -146,6 +146,13 @@ typedef bool(__fastcall* doQuickload)(TDScene* a1);
 typedef void* (__fastcall* validateFileExistance)(__int64 a1, void* a2, td::small_string* path);
 typedef char(__fastcall* loadTDBIN)(__int64 a1, td::small_string* a2);
 
+typedef void* (__fastcall* sub_140105F30)(TDScreen* screen, int a2);
+typedef void* (__fastcall* sub_140146470)(__int64 a1, __int64 a2);
+typedef void* (__fastcall* sub_140032EA0)(float* a1, __int64 a2, float* a3);
+typedef __int64(__fastcall* S140152540)(__int64 a1, __int64 a2, __int64 a3);
+typedef __int64(__fastcall* S1400C4F70)(__int64 a1, __int64 a2);
+typedef void* (__fastcall* S140152740)(void* a1);
+
 //SEE TDFUNCS.CPP FOR SIGSCANNING
 namespace glb {
     void setObjectAttribute(TDShape* shape, const char* a1, const char* a2);
@@ -162,6 +169,13 @@ namespace glb {
     extern loadResource oLoadResource;
     extern raycastCrashA tdRaycastCrashA;
     extern raycastCrashB tdRaycastCrashB;
+
+    extern S140152540 o_S140152540;
+    extern S1400C4F70 o_S1400C4F70;
+    extern S140152740 o_S140152740;
+    extern sub_140105F30 osub_140105F30;
+    extern sub_140146470 osub_140146470;
+    extern sub_140032EA0 osub_140032EA0;
 
     extern TDObjectList* TDOL;
     extern TDPlayer* player;
